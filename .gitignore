@@ -1,0 +1,29 @@
+node_modules/
+.next/
+out/
+build/
+
+# Secrets — never commit. .env.example is the documented, value-free template.
+.env
+.env*
+!.env.example
+
+# Vercel project link + pulled env
+.vercel
+
+# Real team roster — publishing usernames would expose valid portal logins.
+# scripts/team.example.json is the committed template.
+scripts/team.json
+
+# Local SQLite from before the Postgres migration (contains password hashes).
+# Covers the -shm / -wal sidecars too, not just the .db file.
+data/
+*.db
+*.db-*
+
+npm-debug.log*
+yarn-error.log*
+.DS_Store
+Thumbs.db
+*.tsbuildinfo
+next-env.d.ts

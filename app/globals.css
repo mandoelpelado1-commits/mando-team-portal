@@ -1,0 +1,67 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Base type scales up with the screen. 16px on phones keeps iOS from
+   zooming form fields; the larger desktop size is the readability bump. */
+html {
+  font-size: 100%;
+  -webkit-text-size-adjust: 100%;
+}
+
+@media (min-width: 768px) {
+  html {
+    font-size: 112.5%;
+  }
+}
+
+@media (min-width: 1024px) {
+  html {
+    font-size: 125%;
+  }
+}
+
+body {
+  background-color: #0b0b0f;
+  color: #f4f4f5;
+  /* Respect the iPhone notch / home indicator. */
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+  overscroll-behavior-y: none;
+}
+
+::selection {
+  background-color: #ff2e88;
+  color: #0b0b0f;
+}
+
+/* iOS zooms any input whose font-size is under 16px on focus. Force the
+   real minimum so tapping a field never yanks the layout around. */
+input,
+textarea,
+select,
+button {
+  font-size: max(1rem, 16px);
+}
+
+/* Comfortable tap targets on touch devices without bloating the desktop UI. */
+@media (hover: none) and (pointer: coarse) {
+  button,
+  a[href],
+  [role='button'] {
+    min-height: 44px;
+  }
+
+  input[type='datetime-local'],
+  input[type='number'],
+  input[type='password'],
+  input[type='text'] {
+    min-height: 44px;
+  }
+}
+
+/* Long unbroken strings (redirect URIs, client IDs) must never widen the page. */
+.break-anywhere {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}

@@ -1,0 +1,212 @@
+// Career infrastructure milestones for an independent artist.
+// Deliberately no hardcoded fees here — registration costs and requirements change,
+// so the AI guide generates current budget figures with a "verify before paying" note.
+
+export interface MilestoneSeed {
+  slug: string;
+  category: string;
+  title_en: string;
+  title_es: string;
+  description_en: string;
+  description_es: string;
+  priority: 'high' | 'medium' | 'low';
+}
+
+export const MILESTONE_SEED: MilestoneSeed[] = [
+  // --- Royalty collection: money already being earned that goes uncollected ---
+  {
+    slug: 'the-mlc',
+    category: 'royalties',
+    title_en: 'Register with The MLC (mechanical royalties)',
+    title_es: 'Registrarse en The MLC (regalías mecánicas)',
+    description_en:
+      'The Mechanical Licensing Collective collects US streaming mechanical royalties for songwriters/publishers. Free to register. Unregistered songs accrue into an unclaimed pool — this is the single most commonly missed royalty stream.',
+    description_es:
+      'The MLC cobra las regalías mecánicas de streaming en EE.UU. para compositores/editores. El registro es gratuito. Las canciones sin registrar van a un fondo no reclamado — es la fuente de regalías que más se pierde.',
+    priority: 'high',
+  },
+  {
+    slug: 'pro-affiliation',
+    category: 'royalties',
+    title_en: 'Affiliate with a PRO (ASCAP or BMI)',
+    title_es: 'Afiliarse a una PRO (ASCAP o BMI)',
+    description_en:
+      'Performing Rights Organizations collect public performance royalties (radio, venues, TV, streaming performance share). You affiliate with only ONE as a writer — you cannot split your catalog across two.',
+    description_es:
+      'Las PRO cobran regalías de ejecución pública (radio, locales, TV, parte de streaming). Como compositor te afilias a UNA sola — no puedes dividir tu catálogo entre dos.',
+    priority: 'high',
+  },
+  {
+    slug: 'soundexchange',
+    category: 'royalties',
+    title_en: 'Register with SoundExchange (master digital performance)',
+    title_es: 'Registrarse en SoundExchange (ejecución digital del máster)',
+    description_en:
+      'The only US body collecting digital performance royalties for the SOUND RECORDING (SiriusXM, Pandora radio, internet radio). Separate from the PRO and The MLC. Free. Applies if Mando owns his masters.',
+    description_es:
+      'El único organismo en EE.UU. que cobra regalías de ejecución digital de la GRABACIÓN (SiriusXM, Pandora radio, radio por internet). Distinto de la PRO y The MLC. Gratis. Aplica si Mando es dueño de sus másters.',
+    priority: 'high',
+  },
+  {
+    slug: 'publishing-admin',
+    category: 'royalties',
+    title_en: 'Set up publishing administration (global collection)',
+    title_es: 'Configurar administración editorial (cobro global)',
+    description_en:
+      'A publishing admin (Songtrust, CD Baby Pro, or a real publisher) collects royalties from ~100 territories outside the US that The MLC and your PRO do not reach. Takes a percentage — compare before committing.',
+    description_es:
+      'Un administrador editorial (Songtrust, CD Baby Pro, o una editorial real) cobra regalías en ~100 territorios fuera de EE.UU. que The MLC y tu PRO no alcanzan. Cobra un porcentaje — compara antes de firmar.',
+    priority: 'medium',
+  },
+
+  // --- Rights & ownership: prerequisites for everything else ---
+  {
+    slug: 'isrc-codes',
+    category: 'rights',
+    title_en: 'Confirm ISRC codes on every recording',
+    title_es: 'Confirmar códigos ISRC en cada grabación',
+    description_en:
+      'ISRCs are the fingerprint of each recording — royalty tracking, chart reporting and sync all depend on them. Usually issued by your distributor. Verify none are missing or duplicated across releases.',
+    description_es:
+      'Los ISRC son la huella de cada grabación — el rastreo de regalías, reportes de charts y sync dependen de ellos. Normalmente los emite tu distribuidora. Verifica que ninguno falte ni esté duplicado.',
+    priority: 'high',
+  },
+  {
+    slug: 'copyright-registration',
+    category: 'rights',
+    title_en: 'Register copyrights with the US Copyright Office',
+    title_es: 'Registrar derechos de autor en la Oficina de Copyright de EE.UU.',
+    description_en:
+      'Registration is what lets you sue for statutory damages in the US. Streaming platforms and sync buyers do not require it, but you cannot enforce your rights properly without it. Can be filed in batches to save on fees.',
+    description_es:
+      'El registro es lo que te permite demandar por daños legales en EE.UU. Las plataformas y compradores de sync no lo exigen, pero sin él no puedes defender tus derechos. Se puede registrar en lotes para ahorrar.',
+    priority: 'medium',
+  },
+  {
+    slug: 'trademark-name',
+    category: 'rights',
+    title_en: 'Trademark the artist name "Mando El Pelado"',
+    title_es: 'Registrar la marca "Mando El Pelado"',
+    description_en:
+      'Protects the name for merch, touring and brand deals, and stops someone else claiming it. Requires a clearance search first to confirm nobody else holds a conflicting mark.',
+    description_es:
+      'Protege el nombre para merch, giras y acuerdos de marca, y evita que otro lo reclame. Requiere primero una búsqueda para confirmar que nadie tenga una marca en conflicto.',
+    priority: 'medium',
+  },
+  {
+    slug: 'business-entity',
+    category: 'rights',
+    title_en: 'Form a business entity (LLC) for the music',
+    title_es: 'Crear una entidad legal (LLC) para la música',
+    description_en:
+      'Separates personal and music finances, is often required to sign sync/label deals, and cleanly handles income split between the team. Talk to an accountant about which state and structure.',
+    description_es:
+      'Separa las finanzas personales de las de la música, suele ser requisito para firmar acuerdos de sync/sello, y organiza el reparto de ingresos del equipo. Consulta a un contador sobre estado y estructura.',
+    priority: 'medium',
+  },
+
+  // --- Sync & placement: the Netflix / film / TV path ---
+  {
+    slug: 'one-stop-clearance',
+    category: 'sync',
+    title_en: 'Confirm one-stop rights clearance for the catalog',
+    title_es: 'Confirmar derechos "one-stop" del catálogo',
+    description_en:
+      'Music supervisors strongly prefer "one-stop" songs where a single party controls BOTH the master and the publishing. If any feature, producer or co-writer split is undocumented, the song is effectively unusable for sync. Do this before pitching anywhere.',
+    description_es:
+      'Los supervisores musicales prefieren canciones "one-stop" donde una sola parte controla el máster Y la edición. Si algún feature, productor o co-autor no está documentado, la canción no sirve para sync. Haz esto antes de presentar en cualquier lado.',
+    priority: 'high',
+  },
+  {
+    slug: 'sync-metadata-stems',
+    category: 'sync',
+    title_en: 'Prepare sync-ready metadata, stems and instrumentals',
+    title_es: 'Preparar metadata, stems e instrumentales listos para sync',
+    description_en:
+      'Supervisors need broadcast-quality WAVs, instrumental and clean versions, stems, and fully tagged metadata (writers, splits, ISRC, BPM, mood, lyrics). Missing instrumentals is the most common reason a placement falls through late.',
+    description_es:
+      'Los supervisores necesitan WAVs de calidad broadcast, versiones instrumentales y limpias, stems, y metadata completa (compositores, splits, ISRC, BPM, mood, letra). La falta de instrumentales es la razón más común de que una colocación se caiga.',
+    priority: 'high',
+  },
+  {
+    slug: 'sync-agency',
+    category: 'sync',
+    title_en: 'Sign with a sync agency or music library',
+    title_es: 'Firmar con una agencia de sync o librería musical',
+    description_en:
+      'Agencies and libraries already have relationships with music supervisors at Netflix, film studios and ad agencies. Watch for exclusivity terms and how long the rights are tied up — non-exclusive is usually safer early on.',
+    description_es:
+      'Las agencias y librerías ya tienen relación con supervisores musicales de Netflix, estudios de cine y agencias de publicidad. Ojo con la exclusividad y por cuánto tiempo comprometes los derechos — no-exclusivo suele ser más seguro al inicio.',
+    priority: 'medium',
+  },
+  {
+    slug: 'music-supervisor-outreach',
+    category: 'sync',
+    title_en: 'Build a music supervisor outreach pipeline (Netflix, film/TV)',
+    title_es: 'Crear un pipeline de contacto con supervisores musicales (Netflix, cine/TV)',
+    description_en:
+      'Netflix does not accept unsolicited music directly — placements come through supervisors, agencies and licensing platforms. Build a tracked list of Latin/urbano-focused supervisors and pitch only cleared, sync-ready songs.',
+    description_es:
+      'Netflix no acepta música directamente sin solicitar — las colocaciones llegan vía supervisores, agencias y plataformas de licencias. Arma una lista de supervisores enfocados en latino/urbano y presenta solo canciones limpias y listas para sync.',
+    priority: 'medium',
+  },
+
+  // --- Platform presence ---
+  {
+    slug: 'spotify-for-artists',
+    category: 'platforms',
+    title_en: 'Claim and verify Spotify for Artists',
+    title_es: 'Reclamar y verificar Spotify for Artists',
+    description_en:
+      'Unlocks profile control, playlist pitching to Spotify editors, and listener analytics by city — directly useful for deciding where to spend ad budget in Ecuador.',
+    description_es:
+      'Da control del perfil, permite presentar a los editores de playlists de Spotify, y muestra analíticas de oyentes por ciudad — útil para decidir dónde gastar el presupuesto de ads en Ecuador.',
+    priority: 'high',
+  },
+  {
+    slug: 'youtube-oac-contentid',
+    category: 'platforms',
+    title_en: 'Set up YouTube Official Artist Channel + Content ID',
+    title_es: 'Configurar Canal Oficial de Artista en YouTube + Content ID',
+    description_en:
+      'The Official Artist Channel consolidates your presence; Content ID collects revenue when fans use your music in their own videos. Usually enabled through your distributor.',
+    description_es:
+      'El Canal Oficial de Artista consolida tu presencia; Content ID cobra ingresos cuando los fans usan tu música en sus videos. Normalmente se habilita a través de tu distribuidora.',
+    priority: 'medium',
+  },
+  {
+    slug: 'apple-music-artists',
+    category: 'platforms',
+    title_en: 'Claim Apple Music for Artists',
+    title_es: 'Reclamar Apple Music for Artists',
+    description_en:
+      'Profile control plus Shazam and Apple listener data — a useful second read on which cities are actually reacting, independent of Spotify.',
+    description_es:
+      'Control del perfil más datos de Shazam y oyentes de Apple — una segunda lectura útil de qué ciudades están reaccionando, independiente de Spotify.',
+    priority: 'low',
+  },
+
+  // --- Business & growth ---
+  {
+    slug: 'epk',
+    category: 'business',
+    title_en: 'Build a professional EPK (electronic press kit)',
+    title_es: 'Armar un EPK profesional (kit de prensa)',
+    description_en:
+      'One link with bio, press photos, top songs, video, stats and contact. Needed for press, festivals, promoters, sync agencies and brand deals — everyone asks for it eventually.',
+    description_es:
+      'Un solo link con bio, fotos de prensa, mejores canciones, video, estadísticas y contacto. Necesario para prensa, festivales, promotores, agencias de sync y marcas — todos lo piden tarde o temprano.',
+    priority: 'medium',
+  },
+  {
+    slug: 'playlist-pitching',
+    category: 'business',
+    title_en: 'Set up a playlist pitching routine',
+    title_es: 'Establecer una rutina de pitching a playlists',
+    description_en:
+      'Pitch every release through Spotify for Artists at least 7 days before release date, plus editorial and independent curators. Never pay for bot playlists — it triggers fraud detection and can get music removed.',
+    description_es:
+      'Presenta cada lanzamiento por Spotify for Artists al menos 7 días antes de la fecha, además de curadores editoriales e independientes. Nunca pagues playlists con bots — activa detección de fraude y pueden quitar la música.',
+    priority: 'medium',
+  },
+];

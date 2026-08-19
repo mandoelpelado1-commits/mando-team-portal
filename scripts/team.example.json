@@ -1,0 +1,20 @@
+[
+  {
+    "username": "firstname",
+    "display_name": "First Name",
+    "role": "admin",
+    "location": "Country"
+  },
+  {
+    "username": "another",
+    "display_name": "Another Person",
+    "role": "manager",
+    "location": "Country"
+  },
+  {
+    "username": "artist",
+    "display_name": "Artist Name",
+    "role": "artist",
+    "location": "Country"
+  }
+]

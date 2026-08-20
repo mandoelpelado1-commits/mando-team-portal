@@ -156,10 +156,17 @@ export default function DitoWidget() {
         </div>
       )}
 
+      {!open && (
+        <span
+          className="fixed bottom-6 right-6 z-40 h-14 w-14 animate-ping rounded-full bg-cyan/30"
+          style={{ marginBottom: 'env(safe-area-inset-bottom)', animationDuration: '2.2s' }}
+          aria-hidden="true"
+        />
+      )}
       <button
         onClick={() => (open ? setOpen(false) : openWidget())}
         aria-label="DITO"
-        className="fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-magenta to-cyan text-xl font-bold text-black shadow-lg shadow-black/40 transition hover:scale-105"
+        className="fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-magenta to-cyan text-xl font-bold text-black shadow-[0_0_0_1px_rgba(255,255,255,0.15)_inset,0_8px_24px_-6px_rgba(255,46,136,0.55),0_0_28px_-4px_rgba(62,230,230,0.5)] transition hover:scale-105"
         style={{ marginBottom: 'env(safe-area-inset-bottom)' }}
       >
         {open ? (

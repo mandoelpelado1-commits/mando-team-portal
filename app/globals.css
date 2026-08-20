@@ -28,11 +28,147 @@ body {
   padding-left: env(safe-area-inset-left);
   padding-right: env(safe-area-inset-right);
   overscroll-behavior-y: none;
+  position: relative;
 }
 
 ::selection {
   background-color: #ff2e88;
   color: #0b0b0f;
+}
+
+/* ---------------------------------------------------------------------
+   Futuristic HUD layer: fixed grid + drifting glow blobs behind every
+   page. Pure CSS, no JSX needed anywhere — it renders behind body content
+   automatically since these are fixed/negative-z pseudo-elements on <body>.
+   ------------------------------------------------------------------- */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(62, 230, 230, 0.055) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(62, 230, 230, 0.055) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(ellipse 90% 70% at 50% 0%, #000 40%, transparent 100%);
+  -webkit-mask-image: radial-gradient(ellipse 90% 70% at 50% 0%, #000 40%, transparent 100%);
+}
+
+body::after {
+  content: '';
+  position: fixed;
+  inset: -10%;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(38rem 30rem at 8% -5%, rgba(255, 46, 136, 0.16), transparent 60%),
+    radial-gradient(34rem 28rem at 98% 8%, rgba(62, 230, 230, 0.14), transparent 60%),
+    radial-gradient(30rem 26rem at 50% 105%, rgba(245, 197, 66, 0.07), transparent 60%);
+  animation: mando-drift 22s ease-in-out infinite alternate;
+}
+
+@keyframes mando-drift {
+  from {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  to {
+    transform: translate3d(-1.5%, 1.5%, 0) scale(1.03);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body::after {
+    animation: none;
+  }
+}
+
+/* ---------------------------------------------------------------------
+   Card surfaces: every page hand-rolls the same
+   "rounded-xl border border-zinc-800 bg-panel" combo. Extending those
+   utility classes here re-skins every card in the app from one place.
+   ------------------------------------------------------------------- */
+/* .bg-panel and .border-zinc-800 are almost always used on the same
+   element (every hand-rolled card in the app). Both can't set box-shadow
+   independently — same specificity means whichever rule is declared last
+   would win outright and silently drop the other's shadow instead of
+   combining. Keep the full combined shadow list on .bg-panel (which is
+   the "card" signal) and leave .border-zinc-800's base state to
+   border-color only; its own glow only kicks in on :hover, where the
+   compound selector's higher specificity wins cleanly. */
+.bg-panel {
+  background-image: linear-gradient(155deg, rgba(255, 255, 255, 0.035), transparent 40%),
+    linear-gradient(#151319, #151319);
+  position: relative;
+  box-shadow: 0 0 0 1px rgba(62, 230, 230, 0.05), 0 1px 0 0 rgba(255, 255, 255, 0.04) inset,
+    0 12px 32px -16px rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(6px);
+}
+
+.border-zinc-800 {
+  border-color: rgba(63, 63, 70, 0.6);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+a.border-zinc-800:hover,
+button.border-zinc-800:hover,
+label.border-zinc-800:hover {
+  border-color: rgba(62, 230, 230, 0.4);
+  box-shadow: 0 0 0 1px rgba(62, 230, 230, 0.12), 0 0 24px -8px rgba(62, 230, 230, 0.35);
+}
+
+/* Glowing display headings — every page title uses font-display. */
+.font-display {
+  text-shadow: 0 0 18px rgba(255, 46, 136, 0.25), 0 0 42px rgba(62, 230, 230, 0.12);
+}
+
+/* Gradient CTA buttons get a proper neon glow + lift instead of sitting flat. */
+.bg-gradient-to-r.from-magenta.to-cyan,
+.bg-gradient-to-br.from-magenta.to-cyan {
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08) inset, 0 8px 24px -8px rgba(255, 46, 136, 0.45),
+    0 0 24px -6px rgba(62, 230, 230, 0.35);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+}
+
+.bg-gradient-to-r.from-magenta.to-cyan:hover:not(:disabled),
+.bg-gradient-to-br.from-magenta.to-cyan:hover:not(:disabled) {
+  transform: translateY(-1px);
+  filter: brightness(1.06);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12) inset, 0 10px 28px -6px rgba(255, 46, 136, 0.55),
+    0 0 32px -4px rgba(62, 230, 230, 0.45);
+}
+
+.bg-gradient-to-r.from-magenta.to-cyan:active:not(:disabled),
+.bg-gradient-to-br.from-magenta.to-cyan:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+/* Focus glow — layers on top of each field's existing focus:border-magenta. */
+input:focus,
+textarea:focus,
+select:focus {
+  box-shadow: 0 0 0 3px rgba(255, 46, 136, 0.12), 0 0 20px -4px rgba(62, 230, 230, 0.35);
+}
+
+/* Thin neon scrollbar to match the HUD feel. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(62, 230, 230, 0.4) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, rgba(255, 46, 136, 0.5), rgba(62, 230, 230, 0.5));
+  border-radius: 999px;
+  border: 2px solid #0b0b0f;
 }
 
 /* iOS zooms any input whose font-size is under 16px on focus. Force the

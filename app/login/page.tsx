@@ -59,7 +59,14 @@ export default function LoginPage() {
     >
       <div className="w-full max-w-md">
         <div className="mb-10 flex flex-col items-center gap-4">
-          <Image src="/mando-el-pelado-logo.png" alt="Mando El Pelado" width={180} height={116} className="rounded-lg bg-white p-3" />
+          <div className="relative">
+            <div
+              className="absolute inset-0 -z-10 rounded-lg blur-2xl"
+              style={{ background: 'linear-gradient(135deg, rgba(255,46,136,0.5), rgba(62,230,230,0.5))' }}
+              aria-hidden="true"
+            />
+            <Image src="/mando-el-pelado-logo.png" alt="Mando El Pelado" width={180} height={116} className="rounded-lg bg-white p-3" />
+          </div>
           <EqualizerBars />
           <p className="text-base uppercase tracking-[0.3em] text-zinc-400">{t('login', 'portal')}</p>
           <LanguageToggle className="w-28" />

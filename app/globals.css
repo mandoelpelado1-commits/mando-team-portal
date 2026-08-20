@@ -48,11 +48,11 @@ body::before {
   z-index: -2;
   pointer-events: none;
   background-image:
-    linear-gradient(rgba(62, 230, 230, 0.055) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(62, 230, 230, 0.055) 1px, transparent 1px);
-  background-size: 48px 48px;
-  mask-image: radial-gradient(ellipse 90% 70% at 50% 0%, #000 40%, transparent 100%);
-  -webkit-mask-image: radial-gradient(ellipse 90% 70% at 50% 0%, #000 40%, transparent 100%);
+    linear-gradient(rgba(62, 230, 230, 0.09) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(62, 230, 230, 0.09) 1px, transparent 1px),
+    linear-gradient(rgba(255, 46, 136, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 46, 136, 0.05) 1px, transparent 1px);
+  background-size: 48px 48px, 48px 48px, 240px 240px, 240px 240px;
 }
 
 body::after {
@@ -88,23 +88,57 @@ body::after {
    "rounded-xl border border-zinc-800 bg-panel" combo. Extending those
    utility classes here re-skins every card in the app from one place.
    ------------------------------------------------------------------- */
-/* .bg-panel and .border-zinc-800 are almost always used on the same
-   element (every hand-rolled card in the app). Both can't set box-shadow
-   independently — same specificity means whichever rule is declared last
-   would win outright and silently drop the other's shadow instead of
-   combining. Keep the full combined shadow list on .bg-panel (which is
-   the "card" signal) and leave .border-zinc-800's base state to
-   border-color only; its own glow only kicks in on :hover, where the
-   compound selector's higher specificity wins cleanly. */
+/* .bg-panel and .border-zinc-800 are almost always used together on the
+   same element (every hand-rolled card in the app uses
+   "rounded-xl border border-zinc-800 bg-panel"). Since Tailwind's border
+   utility already sets border-color, .border-zinc-800 hands that border
+   over to a real two-layer gradient border (not just a box-shadow ring) —
+   background-clip: padding-box/border-box paints the gradient INTO the
+   border itself. .bg-panel supplies the fill, corner brackets, and depth
+   shadow. Together every card becomes a bordered, cornered HUD panel. */
 .bg-panel {
-  background-image: linear-gradient(155deg, rgba(255, 255, 255, 0.035), transparent 40%),
-    linear-gradient(#151319, #151319);
+  background-image: linear-gradient(155deg, rgba(255, 255, 255, 0.04), transparent 45%),
+    linear-gradient(#17151c, #121016);
   position: relative;
-  box-shadow: 0 0 0 1px rgba(62, 230, 230, 0.05), 0 1px 0 0 rgba(255, 255, 255, 0.04) inset,
-    0 12px 32px -16px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 1px 0 0 rgba(255, 255, 255, 0.05) inset, 0 16px 40px -18px rgba(0, 0, 0, 0.7);
   backdrop-filter: blur(6px);
 }
 
+/* Corner brackets — the recurring "targeting reticle" motif that reads as
+   HUD/sci-fi at a glance. Sits just outside the panel's own radius. */
+.bg-panel::before,
+.bg-panel::after {
+  content: '';
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  pointer-events: none;
+  z-index: 1;
+}
+.bg-panel::before {
+  top: -1px;
+  left: -1px;
+  border-top: 2px solid #ff2e88;
+  border-left: 2px solid #ff2e88;
+  border-top-left-radius: 6px;
+  filter: drop-shadow(0 0 4px rgba(255, 46, 136, 0.7));
+}
+.bg-panel::after {
+  bottom: -1px;
+  right: -1px;
+  border-bottom: 2px solid #3ee6e6;
+  border-right: 2px solid #3ee6e6;
+  border-bottom-right-radius: 6px;
+  filter: drop-shadow(0 0 4px rgba(62, 230, 230, 0.7));
+}
+
+/* Plenty of nested "sub-row" elements use border-zinc-800 with their OWN
+   background (bg-black/30, bg-black/20, etc.) rather than bg-panel — a
+   blind background-image override here would silently blow away that
+   semi-transparent fill. So the bare class only gets a tint + hover glow;
+   the real gradient border (which legitimately needs to own
+   background-image) is reserved for the .bg-panel.border-zinc-800
+   compound below, where .bg-panel already owns the fill anyway. */
 .border-zinc-800 {
   border-color: rgba(63, 63, 70, 0.6);
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
@@ -113,13 +147,44 @@ body::after {
 a.border-zinc-800:hover,
 button.border-zinc-800:hover,
 label.border-zinc-800:hover {
-  border-color: rgba(62, 230, 230, 0.4);
-  box-shadow: 0 0 0 1px rgba(62, 230, 230, 0.12), 0 0 24px -8px rgba(62, 230, 230, 0.35);
+  border-color: rgba(62, 230, 230, 0.5);
+  box-shadow: 0 0 0 1px rgba(62, 230, 230, 0.15), 0 0 24px -8px rgba(62, 230, 230, 0.4);
 }
 
-/* Glowing display headings — every page title uses font-display. */
+/* The real gradient border — only on actual top-level panels, where
+   .bg-panel already owns background-image so there's nothing to clobber. */
+.bg-panel.border-zinc-800 {
+  border: 1px solid transparent;
+  background-image: linear-gradient(155deg, rgba(255, 255, 255, 0.04), transparent 45%),
+    linear-gradient(#17151c, #121016), linear-gradient(135deg, rgba(255, 46, 136, 0.5), rgba(62, 230, 230, 0.5));
+  background-origin: border-box;
+  background-clip: padding-box, padding-box, border-box;
+}
+
+/* Glowing display headings — every page title uses font-display. Page-level
+   h1s additionally get an underline bar so the title reads as a HUD
+   section header, not just bold text. Smaller font-display labels
+   (widget titles, sidebar wordmark) are untouched. */
 .font-display {
-  text-shadow: 0 0 18px rgba(255, 46, 136, 0.25), 0 0 42px rgba(62, 230, 230, 0.12);
+  text-shadow: 0 0 18px rgba(255, 46, 136, 0.3), 0 0 46px rgba(62, 230, 230, 0.15);
+}
+
+h1.font-display {
+  position: relative;
+  display: inline-block;
+  padding-bottom: 0.4em;
+}
+
+h1.font-display::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 3px;
+  width: 4.5rem;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #ff2e88, #3ee6e6);
+  box-shadow: 0 0 12px 1px rgba(62, 230, 230, 0.6);
 }
 
 /* Gradient CTA buttons get a proper neon glow + lift instead of sitting flat. */

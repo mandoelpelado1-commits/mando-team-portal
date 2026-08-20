@@ -72,14 +72,14 @@ export async function getMerchSummary(shopIdOverride?: string): Promise<MerchSum
   const shop =
     (shopIdOverride && shops.find((s) => String(s.id) === String(shopIdOverride))) || shops[0];
 
-  // Pull up to 5 pages (500 orders) — plenty for a pop-up shop, and keeps us
-  // well inside the rate limit.
+  // Pull up to 10 pages (500 orders) — plenty for a pop-up shop, and keeps
+  // us well inside the rate limit. Printify caps limit at 50/page.
   const orders: any[] = [];
-  for (let page = 1; page <= 5; page++) {
-    const res = await printifyFetch(`/shops/${shop.id}/orders.json?limit=100&page=${page}`);
+  for (let page = 1; page <= 10; page++) {
+    const res = await printifyFetch(`/shops/${shop.id}/orders.json?limit=50&page=${page}`);
     const batch = res?.data ?? [];
     orders.push(...batch);
-    if (batch.length < 100 || page >= (res?.last_page ?? 1)) break;
+    if (batch.length < 50 || page >= (res?.last_page ?? 1)) break;
   }
 
   const now = Date.now();

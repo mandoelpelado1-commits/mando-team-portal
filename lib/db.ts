@@ -575,6 +575,64 @@ export async function updateContact(
   `;
 }
 
+// --- Mando Avispate (personal goals for Mando, separate from company work) ---
+export type MandoGoalStatus = 'not_started' | 'in_progress' | 'done';
+
+export interface MandoGoal {
+  id: number;
+  title: string;
+  notes: string | null;
+  status: MandoGoalStatus;
+  due_date: string | null;
+  created_by: number | null;
+  updated_by: number | null;
+  created_at: string;
+  updated_at: string;
+  sort_order: number;
+}
+
+export async function getAllMandoGoals(): Promise<MandoGoal[]> {
+  return (await sql`
+    SELECT * FROM mando_goals
+    ORDER BY (status = 'done') ASC, sort_order ASC, created_at ASC
+  `) as unknown as MandoGoal[];
+}
+
+export async function createMandoGoal(g: {
+  title: string;
+  notes?: string | null;
+  dueDate?: string | null;
+  userId: number;
+}): Promise<number> {
+  const rows = (await sql`
+    INSERT INTO mando_goals (title, notes, due_date, created_by, updated_by)
+    VALUES (${g.title}, ${g.notes ?? null}, ${g.dueDate ?? null}, ${g.userId}, ${g.userId})
+    RETURNING id
+  `) as unknown as { id: number }[];
+  return rows[0].id;
+}
+
+export async function updateMandoGoal(
+  id: number,
+  fields: Partial<Pick<MandoGoal, 'title' | 'notes' | 'status' | 'due_date'>>,
+  userId: number
+) {
+  const rows = (await sql`SELECT * FROM mando_goals WHERE id = ${id}`) as unknown as MandoGoal[];
+  const current = rows[0];
+  if (!current) return;
+  const merged = { ...current, ...fields };
+  await sql`
+    UPDATE mando_goals SET
+      title = ${merged.title}, notes = ${merged.notes}, status = ${merged.status},
+      due_date = ${merged.due_date}, updated_by = ${userId}, updated_at = NOW()
+    WHERE id = ${id}
+  `;
+}
+
+export async function deleteMandoGoal(id: number) {
+  await sql`DELETE FROM mando_goals WHERE id = ${id}`;
+}
+
 // --- Shows / booking pipeline ---
 export type ShowStatus = 'prospecting' | 'pitched' | 'negotiating' | 'confirmed' | 'completed' | 'cancelled';
 

@@ -109,6 +109,19 @@ CREATE TABLE IF NOT EXISTS milestone_guides (
   UNIQUE (milestone_id, lang)
 );
 
+CREATE TABLE IF NOT EXISTS mando_goals (
+  id SERIAL PRIMARY KEY,
+  title TEXT NOT NULL,
+  notes TEXT,
+  status TEXT NOT NULL DEFAULT 'not_started' CHECK (status IN ('not_started', 'in_progress', 'done')),
+  due_date DATE,
+  created_by INTEGER REFERENCES users(id),
+  updated_by INTEGER REFERENCES users(id),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  sort_order INTEGER NOT NULL DEFAULT 0
+);
+
 CREATE TABLE IF NOT EXISTS daily_briefs (
   id SERIAL PRIMARY KEY,
   brief_date DATE NOT NULL,

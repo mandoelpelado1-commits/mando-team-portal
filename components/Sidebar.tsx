@@ -24,6 +24,7 @@ const NAV_ITEMS: { href: string; key: keyof typeof TRANSLATIONS.nav; icon: strin
   { href: '/dashboard/contacts', key: 'contacts', icon: '📇' },
   { href: '/dashboard/ideas', key: 'ideas', icon: '💡' },
   { href: '/dashboard/milestones', key: 'milestones', icon: '🎯' },
+  { href: '/dashboard/mando-avispate', key: 'mandoAvispate', icon: '⚡' },
   { href: '/dashboard/activity', key: 'activity', icon: '🕓' },
   { href: '/dashboard/admin', key: 'admin', icon: '👥', adminOnly: true },
   { href: '/dashboard/settings', key: 'settings', icon: '⚙' },

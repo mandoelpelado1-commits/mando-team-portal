@@ -80,10 +80,12 @@ export default function ContactsPage() {
   const [error, setError] = useState('');
 
   const [outlook, setOutlook] = useState<{ configured: boolean; connected: boolean; email: string | null } | null>(null);
+  const [wixConfigured, setWixConfigured] = useState(false);
   const [importing, setImporting] = useState(false);
   const [syncing, setSyncing] = useState(false);
+  const [wixSyncing, setWixSyncing] = useState(false);
   const [reviewRows, setReviewRows] = useState<ReviewRow[] | null>(null);
-  const [importSource, setImportSource] = useState<'file' | 'outlook' | null>(null);
+  const [importSource, setImportSource] = useState<'file' | 'outlook' | 'wix' | null>(null);
   const [committing, setCommitting] = useState(false);
   const [importNotice, setImportNotice] = useState('');
 
@@ -100,9 +102,15 @@ export default function ContactsPage() {
     if (res.ok) setOutlook(await res.json());
   }
 
+  async function loadWixStatus() {
+    const res = await fetch('/api/contacts/wix/sync');
+    if (res.ok) setWixConfigured((await res.json()).configured);
+  }
+
   useEffect(() => {
     load();
     loadOutlookStatus();
+    loadWixStatus();
   }, []);
 
   useEffect(() => {
@@ -210,6 +218,30 @@ export default function ContactsPage() {
   async function disconnectOutlook() {
     await fetch('/api/contacts/outlook/disconnect', { method: 'POST' });
     loadOutlookStatus();
+  }
+
+  async function syncWix() {
+    setWixSyncing(true);
+    setError('');
+    setImportNotice('');
+    try {
+      const res = await fetch('/api/contacts/wix/sync', { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error);
+        return;
+      }
+      if (data.newCount === 0) {
+        setImportNotice(t('contacts', 'wixNoNew'));
+        return;
+      }
+      setReviewRows(toReviewRows(data.contacts));
+      setImportSource('wix');
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setWixSyncing(false);
+    }
   }
 
   function updateRow(key: number, patch: Partial<ReviewRow>) {
@@ -336,6 +368,20 @@ export default function ContactsPage() {
           ) : (
             <span className="text-sm text-zinc-600">{t('contacts', 'outlookNotConfigured')}</span>
           )}
+
+          <div className="h-6 w-px bg-zinc-800" />
+
+          {wixConfigured ? (
+            <button
+              onClick={syncWix}
+              disabled={wixSyncing}
+              className="rounded-md border border-cyan/40 px-4 py-2 text-sm text-cyan disabled:opacity-50"
+            >
+              {wixSyncing ? t('contacts', 'syncing') : `🌐 ${t('contacts', 'syncWix')}`}
+            </button>
+          ) : (
+            <span className="text-sm text-zinc-600">{t('contacts', 'wixNotConfigured')}</span>
+          )}
         </div>
         <p className="mt-2 text-sm text-zinc-500">{t('contacts', 'importFormats')}</p>
 
@@ -350,7 +396,11 @@ export default function ContactsPage() {
               {t('contacts', 'reviewTitle')} ({reviewRows.length})
             </p>
             <p className="text-sm text-zinc-400">
-              {importSource === 'outlook' ? t('contacts', 'fromOutlook') : t('contacts', 'fromFile')}
+              {importSource === 'outlook'
+                ? t('contacts', 'fromOutlook')
+                : importSource === 'wix'
+                  ? t('contacts', 'fromWix')
+                  : t('contacts', 'fromFile')}
             </p>
           </div>
           <p className="mt-1 text-sm text-zinc-400">{t('contacts', 'reviewHint')}</p>

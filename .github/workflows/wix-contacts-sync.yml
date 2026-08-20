@@ -1,0 +1,18 @@
+name: Wix contacts auto-sync
+
+on:
+  schedule:
+    # Vercel's Hobby plan only allows daily Cron, so this runs from GitHub
+    # Actions instead — new Wix mailing-list subscribers land in the
+    # portal's Contacts within 15 minutes, no manual sync click needed.
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call auto-sync endpoint
+        run: |
+          curl -sf -X GET "https://mando-team-portal.vercel.app/api/cron/wix-contacts-sync" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"

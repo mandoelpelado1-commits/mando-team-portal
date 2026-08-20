@@ -20,6 +20,11 @@ export interface User {
   role: Role;
   location: string;
   must_change_password: number;
+  active: boolean;
+  totp_secret: string | null;
+  totp_enabled: boolean;
+  email: string | null;
+  avatar_url: string | null;
   created_at: string;
 }
 
@@ -63,6 +68,19 @@ function decryptAccount(row: SocialAccount): SocialAccount {
 export async function getSocialAccountsForUser(userId: number): Promise<SocialAccount[]> {
   const rows = (await sql`SELECT * FROM social_accounts WHERE user_id = ${userId}`) as unknown as SocialAccount[];
   return rows.map(decryptAccount);
+}
+
+/**
+ * Every team member's connection status, for the shared "who's connected to
+ * what" view. Deliberately does NOT decrypt or return tokens — this is meant
+ * to be visible to the whole team, credentials never are.
+ */
+export async function getAllSocialAccountsStatus(): Promise<
+  Pick<SocialAccount, 'user_id' | 'platform' | 'platform_username' | 'connected_at'>[]
+> {
+  return (await sql`
+    SELECT user_id, platform, platform_username, connected_at FROM social_accounts
+  `) as unknown as Pick<SocialAccount, 'user_id' | 'platform' | 'platform_username' | 'connected_at'>[];
 }
 
 export async function upsertSocialAccount(account: {
@@ -180,6 +198,7 @@ export interface Post {
   media_url: string | null;
   media_type: string | null;
   link_url: string | null;
+  google_event_id: string | null;
   created_at: string;
 }
 
@@ -221,12 +240,21 @@ export async function getAllPosts(): Promise<Post[]> {
   `) as unknown as Post[];
 }
 
+export async function getPostById(id: number): Promise<Post | undefined> {
+  const rows = (await sql`SELECT * FROM posts WHERE id = ${id}`) as unknown as Post[];
+  return rows[0];
+}
+
 export async function updatePostSchedule(
   postId: number,
   scheduledFor: string,
   status: Post['status'] = 'scheduled'
 ) {
   await sql`UPDATE posts SET scheduled_for = ${scheduledFor}, status = ${status} WHERE id = ${postId}`;
+}
+
+export async function setPostGoogleEventId(postId: number, googleEventId: string | null) {
+  await sql`UPDATE posts SET google_event_id = ${googleEventId} WHERE id = ${postId}`;
 }
 
 export async function updatePostStatus(
@@ -478,4 +506,503 @@ export async function updateDspMetrics(id: number, followers: number, popularity
     SET followers = ${followers}, popularity = ${popularity}, metrics_updated_at = NOW()
     WHERE id = ${id}
   `;
+}
+
+// --- Contacts / CRM ---
+export type ContactType = 'venue' | 'promoter' | 'press' | 'sync' | 'curator' | 'other';
+export type ContactStatus = 'new' | 'contacted' | 'responded' | 'negotiating' | 'confirmed' | 'passed' | 'dead';
+
+export interface Contact {
+  id: number;
+  name: string;
+  type: ContactType;
+  company: string | null;
+  email: string | null;
+  phone: string | null;
+  city: string | null;
+  country: string | null;
+  status: ContactStatus;
+  notes: string | null;
+  created_by: number | null;
+  updated_by: number | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export async function getAllContacts(): Promise<Contact[]> {
+  return (await sql`SELECT * FROM contacts ORDER BY updated_at DESC`) as unknown as Contact[];
+}
+
+export async function getContactById(id: number): Promise<Contact | undefined> {
+  const rows = (await sql`SELECT * FROM contacts WHERE id = ${id}`) as unknown as Contact[];
+  return rows[0];
+}
+
+export async function createContact(c: {
+  name: string;
+  type: ContactType;
+  company?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  city?: string | null;
+  country?: string | null;
+  notes?: string | null;
+  userId: number;
+}): Promise<number> {
+  const rows = (await sql`
+    INSERT INTO contacts (name, type, company, email, phone, city, country, notes, created_by, updated_by)
+    VALUES (${c.name}, ${c.type}, ${c.company ?? null}, ${c.email ?? null}, ${c.phone ?? null},
+            ${c.city ?? null}, ${c.country ?? null}, ${c.notes ?? null}, ${c.userId}, ${c.userId})
+    RETURNING id
+  `) as unknown as { id: number }[];
+  return rows[0].id;
+}
+
+export async function updateContact(
+  id: number,
+  fields: Partial<Pick<Contact, 'name' | 'type' | 'company' | 'email' | 'phone' | 'city' | 'country' | 'status' | 'notes'>>,
+  userId: number
+) {
+  const current = await getContactById(id);
+  if (!current) return;
+  const merged = { ...current, ...fields };
+  await sql`
+    UPDATE contacts SET
+      name = ${merged.name}, type = ${merged.type}, company = ${merged.company},
+      email = ${merged.email}, phone = ${merged.phone}, city = ${merged.city}, country = ${merged.country},
+      status = ${merged.status}, notes = ${merged.notes}, updated_by = ${userId}, updated_at = NOW()
+    WHERE id = ${id}
+  `;
+}
+
+// --- Shows / booking pipeline ---
+export type ShowStatus = 'prospecting' | 'pitched' | 'negotiating' | 'confirmed' | 'completed' | 'cancelled';
+
+export interface Show {
+  id: number;
+  contact_id: number | null;
+  venue_name: string;
+  city: string | null;
+  country: string | null;
+  target_date: string | null;
+  capacity: number | null;
+  fee_offered: number | null;
+  status: ShowStatus;
+  notes: string | null;
+  pitch_draft: string | null;
+  created_by: number | null;
+  updated_by: number | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export async function getAllShows(): Promise<Show[]> {
+  return (await sql`SELECT * FROM shows ORDER BY updated_at DESC`) as unknown as Show[];
+}
+
+export async function getShowById(id: number): Promise<Show | undefined> {
+  const rows = (await sql`SELECT * FROM shows WHERE id = ${id}`) as unknown as Show[];
+  return rows[0];
+}
+
+export async function createShow(s: {
+  venueName: string;
+  city?: string | null;
+  country?: string | null;
+  targetDate?: string | null;
+  capacity?: number | null;
+  feeOffered?: number | null;
+  contactId?: number | null;
+  notes?: string | null;
+  userId: number;
+}): Promise<number> {
+  const rows = (await sql`
+    INSERT INTO shows (venue_name, city, country, target_date, capacity, fee_offered, contact_id, notes, created_by, updated_by)
+    VALUES (${s.venueName}, ${s.city ?? null}, ${s.country ?? null}, ${s.targetDate ?? null}, ${s.capacity ?? null},
+            ${s.feeOffered ?? null}, ${s.contactId ?? null}, ${s.notes ?? null}, ${s.userId}, ${s.userId})
+    RETURNING id
+  `) as unknown as { id: number }[];
+  return rows[0].id;
+}
+
+export async function updateShow(
+  id: number,
+  fields: Partial<Pick<Show, 'venue_name' | 'city' | 'country' | 'target_date' | 'capacity' | 'fee_offered' | 'status' | 'notes' | 'pitch_draft'>>,
+  userId: number
+) {
+  const current = await getShowById(id);
+  if (!current) return;
+  const merged = { ...current, ...fields };
+  await sql`
+    UPDATE shows SET
+      venue_name = ${merged.venue_name}, city = ${merged.city}, country = ${merged.country},
+      target_date = ${merged.target_date}, capacity = ${merged.capacity}, fee_offered = ${merged.fee_offered},
+      status = ${merged.status}, notes = ${merged.notes}, pitch_draft = ${merged.pitch_draft},
+      updated_by = ${userId}, updated_at = NOW()
+    WHERE id = ${id}
+  `;
+}
+
+// --- Playlists (manual tracking; no platform exposes a reverse-lookup API) ---
+export type PlaylistStatus = 'pitched' | 'added' | 'removed';
+
+export interface PlaylistEntry {
+  id: number;
+  name: string;
+  platform: 'spotify' | 'apple_music' | 'youtube_music' | 'other';
+  curator: string | null;
+  song_title: string | null;
+  followers: number | null;
+  url: string | null;
+  status: PlaylistStatus;
+  date_added: string | null;
+  notes: string | null;
+  created_by: number | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export async function getAllPlaylists(): Promise<PlaylistEntry[]> {
+  return (await sql`SELECT * FROM playlists ORDER BY updated_at DESC`) as unknown as PlaylistEntry[];
+}
+
+export async function getPlaylistById(id: number): Promise<PlaylistEntry | undefined> {
+  const rows = (await sql`SELECT * FROM playlists WHERE id = ${id}`) as unknown as PlaylistEntry[];
+  return rows[0];
+}
+
+export async function createPlaylistEntry(p: {
+  name: string;
+  platform: string;
+  curator?: string | null;
+  songTitle?: string | null;
+  followers?: number | null;
+  url?: string | null;
+  status?: string;
+  dateAdded?: string | null;
+  notes?: string | null;
+  userId: number;
+}): Promise<number> {
+  const rows = (await sql`
+    INSERT INTO playlists (name, platform, curator, song_title, followers, url, status, date_added, notes, created_by)
+    VALUES (${p.name}, ${p.platform}, ${p.curator ?? null}, ${p.songTitle ?? null}, ${p.followers ?? null},
+            ${p.url ?? null}, ${p.status ?? 'pitched'}, ${p.dateAdded ?? null}, ${p.notes ?? null}, ${p.userId})
+    RETURNING id
+  `) as unknown as { id: number }[];
+  return rows[0].id;
+}
+
+export async function updatePlaylistEntry(
+  id: number,
+  fields: Partial<Pick<PlaylistEntry, 'name' | 'platform' | 'curator' | 'song_title' | 'followers' | 'url' | 'status' | 'date_added' | 'notes'>>
+) {
+  const current = await getPlaylistById(id);
+  if (!current) return;
+  const merged = { ...current, ...fields };
+  await sql`
+    UPDATE playlists SET
+      name = ${merged.name}, platform = ${merged.platform}, curator = ${merged.curator},
+      song_title = ${merged.song_title}, followers = ${merged.followers}, url = ${merged.url},
+      status = ${merged.status}, date_added = ${merged.date_added}, notes = ${merged.notes}, updated_at = NOW()
+    WHERE id = ${id}
+  `;
+}
+
+export async function deletePlaylistEntry(id: number) {
+  await sql`DELETE FROM playlists WHERE id = ${id}`;
+}
+
+// --- Activity log ---
+export interface ActivityEntry {
+  id: number;
+  user_id: number | null;
+  category: string;
+  action: string;
+  summary: string;
+  created_at: string;
+}
+
+export async function logActivity(userId: number | null, category: string, action: string, summary: string) {
+  try {
+    await sql`INSERT INTO activity_log (user_id, category, action, summary) VALUES (${userId}, ${category}, ${action}, ${summary})`;
+  } catch (err) {
+    console.error('[activity_log] failed:', (err as Error).message);
+  }
+}
+
+export async function getRecentActivity(limit = 50): Promise<ActivityEntry[]> {
+  return (await sql`SELECT * FROM activity_log ORDER BY created_at DESC LIMIT ${limit}`) as unknown as ActivityEntry[];
+}
+
+// --- AI usage / rate limiting ---
+export async function checkAndIncrementAiUsage(userId: number, endpoint: string, dailyLimit: number): Promise<boolean> {
+  const today = new Date().toISOString().slice(0, 10);
+  const rows = (await sql`
+    INSERT INTO ai_usage (user_id, endpoint, usage_date, count)
+    VALUES (${userId}, ${endpoint}, ${today}, 1)
+    ON CONFLICT (user_id, endpoint, usage_date) DO UPDATE SET count = ai_usage.count + 1
+    RETURNING count
+  `) as unknown as { count: number }[];
+  return rows[0].count <= dailyLimit;
+}
+
+// --- User management (admin) ---
+export async function createTeamUser(fields: {
+  username: string;
+  passwordHash: string;
+  displayName: string;
+  role: Role;
+  location: string;
+}): Promise<number> {
+  const rows = (await sql`
+    INSERT INTO users (username, password_hash, display_name, role, location, must_change_password)
+    VALUES (${fields.username}, ${fields.passwordHash}, ${fields.displayName}, ${fields.role}, ${fields.location}, 1)
+    RETURNING id
+  `) as unknown as { id: number }[];
+  return rows[0].id;
+}
+
+export async function setUserActive(userId: number, active: boolean) {
+  await sql`UPDATE users SET active = ${active} WHERE id = ${userId}`;
+}
+
+export async function setUserRole(userId: number, role: Role) {
+  await sql`UPDATE users SET role = ${role} WHERE id = ${userId}`;
+}
+
+export async function forcePasswordReset(userId: number, passwordHash: string) {
+  await sql`UPDATE users SET password_hash = ${passwordHash}, must_change_password = 1 WHERE id = ${userId}`;
+}
+
+// --- 2FA (TOTP) ---
+export async function setTotpSecret(userId: number, secret: string | null, enabled: boolean) {
+  await sql`UPDATE users SET totp_secret = ${secret}, totp_enabled = ${enabled} WHERE id = ${userId}`;
+}
+
+export async function setUserEmail(userId: number, email: string | null) {
+  await sql`UPDATE users SET email = ${email} WHERE id = ${userId}`;
+}
+
+export async function getUsersWithEmail(): Promise<User[]> {
+  return (await getAllUsers()).filter((u) => u.email && u.active !== false);
+}
+
+// --- DITO's long-term memory (persisted research, not per-conversation state) ---
+export async function getDitoMemory(key: string): Promise<{ content: string; updatedAt: string } | undefined> {
+  const rows = (await sql`SELECT content, updated_at FROM dito_memory WHERE key = ${key}`) as unknown as {
+    content: string;
+    updated_at: string;
+  }[];
+  return rows[0] ? { content: rows[0].content, updatedAt: rows[0].updated_at } : undefined;
+}
+
+export async function setDitoMemory(key: string, content: string) {
+  await sql`
+    INSERT INTO dito_memory (key, content) VALUES (${key}, ${content})
+    ON CONFLICT (key) DO UPDATE SET content = EXCLUDED.content, updated_at = NOW()
+  `;
+}
+
+// --- Web push subscriptions (phone/browser notifications) ---
+export interface PushSubscriptionRow {
+  id: number;
+  user_id: number;
+  endpoint: string;
+  p256dh: string;
+  auth: string;
+  created_at: string;
+}
+
+export async function addPushSubscription(userId: number, endpoint: string, p256dh: string, auth: string) {
+  await sql`
+    INSERT INTO push_subscriptions (user_id, endpoint, p256dh, auth)
+    VALUES (${userId}, ${endpoint}, ${p256dh}, ${auth})
+    ON CONFLICT (endpoint) DO UPDATE SET user_id = EXCLUDED.user_id, p256dh = EXCLUDED.p256dh, auth = EXCLUDED.auth
+  `;
+}
+
+export async function removePushSubscription(endpoint: string) {
+  await sql`DELETE FROM push_subscriptions WHERE endpoint = ${endpoint}`;
+}
+
+export async function getPushSubscriptionsForUser(userId: number): Promise<PushSubscriptionRow[]> {
+  return (await sql`SELECT * FROM push_subscriptions WHERE user_id = ${userId}`) as unknown as PushSubscriptionRow[];
+}
+
+export async function getAllPushSubscriptions(excludeUserId?: number | null): Promise<PushSubscriptionRow[]> {
+  const rows = (await sql`SELECT * FROM push_subscriptions`) as unknown as PushSubscriptionRow[];
+  return excludeUserId ? rows.filter((r) => r.user_id !== excludeUserId) : rows;
+}
+
+export async function setUserAvatar(userId: number, avatarUrl: string | null) {
+  await sql`UPDATE users SET avatar_url = ${avatarUrl} WHERE id = ${userId}`;
+}
+
+export async function setUserDisplayName(userId: number, displayName: string) {
+  await sql`UPDATE users SET display_name = ${displayName} WHERE id = ${userId}`;
+}
+
+// --- DITO assistant ---
+export interface DitoConversation {
+  id: number;
+  user_id: number;
+  title: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DitoMessage {
+  id: number;
+  conversation_id: number;
+  role: 'user' | 'assistant';
+  content: string;
+  sources_json: string | null;
+  created_at: string;
+}
+
+export async function getDitoConversations(userId: number): Promise<DitoConversation[]> {
+  return (await sql`
+    SELECT * FROM dito_conversations WHERE user_id = ${userId} ORDER BY updated_at DESC
+  `) as unknown as DitoConversation[];
+}
+
+export async function createDitoConversation(userId: number, title: string): Promise<number> {
+  const rows = (await sql`
+    INSERT INTO dito_conversations (user_id, title) VALUES (${userId}, ${title}) RETURNING id
+  `) as unknown as { id: number }[];
+  return rows[0].id;
+}
+
+export async function touchDitoConversation(id: number) {
+  await sql`UPDATE dito_conversations SET updated_at = NOW() WHERE id = ${id}`;
+}
+
+export async function getDitoMessages(conversationId: number): Promise<DitoMessage[]> {
+  return (await sql`
+    SELECT * FROM dito_messages WHERE conversation_id = ${conversationId} ORDER BY created_at ASC
+  `) as unknown as DitoMessage[];
+}
+
+export async function addDitoMessage(
+  conversationId: number,
+  role: 'user' | 'assistant',
+  content: string,
+  sourcesJson?: string | null
+): Promise<number> {
+  const rows = (await sql`
+    INSERT INTO dito_messages (conversation_id, role, content, sources_json)
+    VALUES (${conversationId}, ${role}, ${content}, ${sourcesJson ?? null})
+    RETURNING id
+  `) as unknown as { id: number }[];
+  return rows[0].id;
+}
+
+export async function getDitoConversationOwner(conversationId: number): Promise<number | undefined> {
+  const rows = (await sql`SELECT user_id FROM dito_conversations WHERE id = ${conversationId}`) as unknown as { user_id: number }[];
+  return rows[0]?.user_id;
+}
+
+// --- Outlook contacts connection (per-user; one shared Azure app, each
+// person consents individually — same trust model as social accounts:
+// tokens are private, never shared between logins) ---
+export interface OutlookAccount {
+  id: number;
+  user_id: number;
+  email: string | null;
+  access_token: string | null;
+  refresh_token: string | null;
+  expires_at: string | null;
+  connected_at: string;
+}
+
+function decryptOutlook(row: OutlookAccount): OutlookAccount {
+  return {
+    ...row,
+    access_token: row.access_token ? decrypt(row.access_token) : null,
+    refresh_token: row.refresh_token ? decrypt(row.refresh_token) : null,
+  };
+}
+
+export async function getOutlookAccount(userId: number): Promise<OutlookAccount | undefined> {
+  const rows = (await sql`SELECT * FROM outlook_accounts WHERE user_id = ${userId}`) as unknown as OutlookAccount[];
+  return rows[0] ? decryptOutlook(rows[0]) : undefined;
+}
+
+export async function upsertOutlookAccount(a: {
+  userId: number;
+  email: string;
+  accessToken: string;
+  refreshToken: string;
+  expiresAt: string;
+}) {
+  await sql`
+    INSERT INTO outlook_accounts (user_id, email, access_token, refresh_token, expires_at)
+    VALUES (${a.userId}, ${a.email}, ${encrypt(a.accessToken)}, ${encrypt(a.refreshToken)}, ${a.expiresAt})
+    ON CONFLICT (user_id) DO UPDATE SET
+      email = EXCLUDED.email,
+      access_token = EXCLUDED.access_token,
+      refresh_token = EXCLUDED.refresh_token,
+      expires_at = EXCLUDED.expires_at,
+      connected_at = NOW()
+  `;
+}
+
+export async function disconnectOutlookAccount(userId: number) {
+  await sql`DELETE FROM outlook_accounts WHERE user_id = ${userId}`;
+}
+
+// --- Google Calendar connection (per-user; one shared Google app, same
+// consent model as Outlook above) ---
+export interface GoogleCalendarAccount {
+  id: number;
+  user_id: number;
+  email: string | null;
+  access_token: string | null;
+  refresh_token: string | null;
+  expires_at: string | null;
+  connected_at: string;
+}
+
+function decryptCalendar(row: GoogleCalendarAccount): GoogleCalendarAccount {
+  return {
+    ...row,
+    access_token: row.access_token ? decrypt(row.access_token) : null,
+    refresh_token: row.refresh_token ? decrypt(row.refresh_token) : null,
+  };
+}
+
+export async function getGoogleCalendarAccount(userId: number): Promise<GoogleCalendarAccount | undefined> {
+  const rows = (await sql`
+    SELECT * FROM google_calendar_accounts WHERE user_id = ${userId}
+  `) as unknown as GoogleCalendarAccount[];
+  return rows[0] ? decryptCalendar(rows[0]) : undefined;
+}
+
+export async function upsertGoogleCalendarAccount(a: {
+  userId: number;
+  email: string;
+  accessToken: string;
+  refreshToken?: string | null;
+  expiresAt: string;
+}) {
+  // Google only returns a refresh_token on the very first consent; keep the
+  // existing one on subsequent token refreshes where none is sent back.
+  const existing = await getGoogleCalendarAccount(a.userId);
+  const refreshToken = a.refreshToken || existing?.refresh_token;
+  if (!refreshToken) throw new Error('No refresh token available for Google Calendar connection.');
+
+  await sql`
+    INSERT INTO google_calendar_accounts (user_id, email, access_token, refresh_token, expires_at)
+    VALUES (${a.userId}, ${a.email}, ${encrypt(a.accessToken)}, ${encrypt(refreshToken)}, ${a.expiresAt})
+    ON CONFLICT (user_id) DO UPDATE SET
+      email = EXCLUDED.email,
+      access_token = EXCLUDED.access_token,
+      refresh_token = EXCLUDED.refresh_token,
+      expires_at = EXCLUDED.expires_at,
+      connected_at = NOW()
+  `;
+}
+
+export async function disconnectGoogleCalendarAccount(userId: number) {
+  await sql`DELETE FROM google_calendar_accounts WHERE user_id = ${userId}`;
 }

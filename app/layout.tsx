@@ -21,6 +21,7 @@ export const metadata: Metadata = {
     icon: '/mando-el-pelado-logo.png',
     apple: '/mando-el-pelado-logo.png',
   },
+  manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
     title: 'Mando Portal',

@@ -19,6 +19,7 @@ export default async function OverviewPage() {
     name: u.display_name,
     role: u.role,
     location: u.location,
+    avatarUrl: u.avatar_url,
   }));
 
   return (

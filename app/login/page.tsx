@@ -12,6 +12,8 @@ export default function LoginPage() {
   const { t } = useLanguage();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [totpCode, setTotpCode] = useState('');
+  const [needs2fa, setNeeds2fa] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -22,9 +24,23 @@ export default function LoginPage() {
     const result = await signIn('credentials', {
       username: username.trim().toLowerCase(),
       password,
+      totpCode: needs2fa ? totpCode.trim() : undefined,
       redirect: false,
     });
     setLoading(false);
+
+    if (result?.error === '2FA_REQUIRED') {
+      setNeeds2fa(true);
+      return;
+    }
+    if (result?.error === '2FA_INVALID') {
+      setError(t('security', 'twoFactorInvalid'));
+      return;
+    }
+    if (result?.error === 'ACCOUNT_DISABLED') {
+      setError(t('security', 'accountDisabled'));
+      return;
+    }
     if (result?.error) {
       setError(t('login', 'invalid'));
       return;
@@ -52,35 +68,70 @@ export default function LoginPage() {
           onSubmit={handleSubmit}
           className="rounded-xl border border-zinc-800 bg-panel p-8 shadow-xl shadow-black/40"
         >
-          <div className="mb-5">
-            <label className="mb-2 block text-sm uppercase tracking-wide text-zinc-400">{t('login', 'username')}</label>
-            <input
-              className="w-full rounded-md border border-zinc-700 bg-black/40 px-4 py-3 text-base outline-none focus:border-magenta"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              autoComplete="username"
-              required
-            />
-          </div>
-          <div className="mb-6">
-            <label className="mb-2 block text-sm uppercase tracking-wide text-zinc-400">{t('login', 'password')}</label>
-            <input
-              type="password"
-              className="w-full rounded-md border border-zinc-700 bg-black/40 px-4 py-3 text-base outline-none focus:border-magenta"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              autoComplete="current-password"
-              required
-            />
-          </div>
+          {!needs2fa ? (
+            <>
+              <div className="mb-5">
+                <label className="mb-2 block text-sm uppercase tracking-wide text-zinc-400">{t('login', 'username')}</label>
+                <input
+                  className="w-full rounded-md border border-zinc-700 bg-black/40 px-4 py-3 text-base outline-none focus:border-magenta"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  autoComplete="username"
+                  required
+                  autoFocus
+                />
+              </div>
+              <div className="mb-6">
+                <label className="mb-2 block text-sm uppercase tracking-wide text-zinc-400">{t('login', 'password')}</label>
+                <input
+                  type="password"
+                  className="w-full rounded-md border border-zinc-700 bg-black/40 px-4 py-3 text-base outline-none focus:border-magenta"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  autoComplete="current-password"
+                  required
+                />
+              </div>
+            </>
+          ) : (
+            <div className="mb-6">
+              <label className="mb-2 block text-sm uppercase tracking-wide text-zinc-400">
+                {t('security', 'twoFactorRequired')}
+              </label>
+              <input
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                maxLength={6}
+                className="w-full rounded-md border border-zinc-700 bg-black/40 px-4 py-3 text-center text-2xl tracking-[0.5em] outline-none focus:border-magenta"
+                value={totpCode}
+                onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, ''))}
+                autoFocus
+                required
+              />
+            </div>
+          )}
+
           {error && <p className="mb-4 text-base text-magenta">{error}</p>}
           <button
             type="submit"
             disabled={loading}
             className="w-full rounded-md bg-gradient-to-r from-magenta to-cyan px-4 py-3 text-base font-semibold text-black transition disabled:opacity-50"
           >
-            {loading ? t('login', 'signingIn') : t('login', 'signIn')}
+            {loading ? t('login', 'signingIn') : needs2fa ? t('security', 'confirm') : t('login', 'signIn')}
           </button>
+          {needs2fa && (
+            <button
+              type="button"
+              onClick={() => {
+                setNeeds2fa(false);
+                setTotpCode('');
+                setError('');
+              }}
+              className="mt-3 w-full text-center text-sm text-zinc-500 hover:text-white"
+            >
+              ← {t('common', 'cancel')}
+            </button>
+          )}
         </form>
       </div>
     </div>

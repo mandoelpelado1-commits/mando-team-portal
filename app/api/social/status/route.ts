@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { getSocialAccountsForUser, getSocialAppCredentialsForUser } from '@/lib/db';
+import { getSocialAccountsForUser, getSocialAppCredentialsForUser, getAllSocialAccountsStatus, getAllUsers } from '@/lib/db';
 import { ALL_PLATFORMS, PLATFORM_LABELS, redirectUri } from '@/lib/oauth';
 
 export async function GET() {
@@ -29,5 +29,16 @@ export async function GET() {
     };
   });
 
-  return NextResponse.json({ platforms });
+  // Team-wide view: who's connected to what, never tokens or app secrets —
+  // "we all see analytics, we just won't share passwords."
+  const allStatus = await getAllSocialAccountsStatus();
+  const users = new Map((await getAllUsers()).map((u) => [u.id, u.display_name]));
+  const team = allStatus.map((a) => ({
+    userName: users.get(a.user_id) || 'Unknown',
+    platform: a.platform,
+    platformUsername: a.platform_username,
+    connectedAt: a.connected_at,
+  }));
+
+  return NextResponse.json({ platforms, team });
 }

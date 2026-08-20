@@ -1,8 +1,15 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useLanguage } from '@/components/LanguageProvider';
 import { TRANSLATIONS } from '@/lib/i18n';
+
+interface CalendarStatus {
+  configured: boolean;
+  connected: boolean;
+  email: string | null;
+}
 
 interface Post {
   id: number;
@@ -35,10 +42,13 @@ function startOfWeek(d: Date) {
 
 export default function SchedulePage() {
   const { t, lang } = useLanguage();
+  const searchParams = useSearchParams();
   const [posts, setPosts] = useState<Post[]>([]);
+  const [calendarNotice, setCalendarNotice] = useState('');
   const [loading, setLoading] = useState(true);
   const [schedulingId, setSchedulingId] = useState<number | null>(null);
   const [dateInput, setDateInput] = useState('');
+  const [calendar, setCalendar] = useState<CalendarStatus | null>(null);
 
   const locale = lang === 'es' ? 'es-EC' : 'en-US';
 
@@ -50,9 +60,25 @@ export default function SchedulePage() {
     setLoading(false);
   }
 
+  async function loadCalendarStatus() {
+    const res = await fetch('/api/calendar/google/status');
+    if (res.ok) setCalendar(await res.json());
+  }
+
+  async function disconnectCalendar() {
+    await fetch('/api/calendar/google/disconnect', { method: 'POST' });
+    loadCalendarStatus();
+  }
+
   useEffect(() => {
     load();
+    loadCalendarStatus();
   }, []);
+
+  useEffect(() => {
+    if (searchParams.get('connected') === 'google_calendar') setCalendarNotice(t('schedule', 'calendarConnected'));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   const drafts = posts.filter((p) => p.status === 'draft');
   const weekStart = startOfWeek(new Date());
@@ -89,6 +115,32 @@ export default function SchedulePage() {
     <div>
       <h1 className="font-display text-4xl tracking-wide text-white">{t('schedule', 'title')}</h1>
       <p className="mt-2 text-base text-zinc-400">{t('schedule', 'subtitle')}</p>
+
+      <div className="mt-5 rounded-xl border border-zinc-800 bg-panel p-5">
+        {calendar?.connected ? (
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="text-base text-zinc-300">
+              📅 {t('schedule', 'calendarConnectedAs')} <span className="text-cyan">{calendar.email}</span>
+            </span>
+            <button onClick={disconnectCalendar} className="text-sm text-zinc-500 underline hover:text-zinc-300">
+              {t('common', 'disconnect')}
+            </button>
+          </div>
+        ) : calendar?.configured ? (
+          <div className="flex flex-wrap items-center gap-3">
+            <a
+              href="/api/calendar/google/connect"
+              className="inline-flex items-center gap-2 rounded-md border border-zinc-600 px-5 py-2.5 text-base text-zinc-300 hover:border-cyan hover:text-white"
+            >
+              📅 {t('schedule', 'connectCalendar')}
+            </a>
+            <span className="text-sm text-zinc-500">{t('schedule', 'calendarHint')}</span>
+          </div>
+        ) : (
+          <p className="text-sm text-zinc-600">{t('schedule', 'calendarNotConfigured')}</p>
+        )}
+        {calendarNotice && <p className="mt-2 text-sm text-cyan">{calendarNotice}</p>}
+      </div>
 
       <div className="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-4">
         <div className="rounded-xl border border-zinc-800 bg-panel p-5 xl:col-span-1">

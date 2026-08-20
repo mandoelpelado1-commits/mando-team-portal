@@ -8,6 +8,7 @@ interface TeamMember {
   name: string;
   role: 'admin' | 'manager' | 'artist';
   location: string;
+  avatarUrl: string | null;
 }
 
 interface UpcomingPost {
@@ -93,11 +94,21 @@ export default function OverviewClient({
         <p className="mb-4 text-sm uppercase tracking-wide text-zinc-400">{t('overview', 'team')}</p>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {team.map((member) => (
-            <div key={member.id} className="rounded-lg border border-zinc-800 bg-black/30 p-4">
-              <p className="text-base font-semibold text-white">{member.name}</p>
-              <p className="text-sm text-zinc-400">
-                {t('roles', member.role)} &middot; {member.location}
-              </p>
+            <div key={member.id} className="flex items-center gap-3 rounded-lg border border-zinc-800 bg-black/30 p-4">
+              {member.avatarUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={member.avatarUrl} alt="" className="h-11 w-11 shrink-0 rounded-full object-cover" />
+              ) : (
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-magenta to-cyan text-base font-bold text-black">
+                  {member.name.trim().charAt(0).toUpperCase()}
+                </div>
+              )}
+              <div className="min-w-0">
+                <p className="truncate text-base font-semibold text-white">{member.name}</p>
+                <p className="truncate text-sm text-zinc-400">
+                  {t('roles', member.role)} &middot; {member.location}
+                </p>
+              </div>
             </div>
           ))}
         </div>

@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { createIdea, getAllIdeas, getAllIdeaAcknowledgments, getAllUsers } from '@/lib/db';
+import { createIdea, getAllIdeas, getAllIdeaAcknowledgments, getAllUsers, logActivity } from '@/lib/db';
+import { notifyTeam } from '@/lib/notify';
+import { pushToTeam } from '@/lib/push';
 
 export async function GET() {
   const session = await getServerSession(authOptions);
@@ -42,6 +44,18 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Idea content is required.' }, { status: 400 });
   }
 
-  const id = await createIdea(Number(session.user.id), content.trim());
+  const userId = Number(session.user.id);
+  const id = await createIdea(userId, content.trim());
+  await logActivity(userId, 'ideas', 'created', `${session.user.name} posted an idea`);
+  await notifyTeam(
+    userId,
+    `New idea from ${session.user.name}`,
+    `<p>${content.trim()}</p><p><a href="${process.env.APP_BASE_URL || ''}/dashboard/ideas">Acknowledge it in the portal</a></p>`
+  );
+  await pushToTeam(userId, {
+    title: `💡 ${session.user.name}`,
+    body: content.trim().slice(0, 140),
+    url: '/dashboard/ideas',
+  });
   return NextResponse.json({ id });
 }

@@ -9,7 +9,8 @@
     "lint": "next lint",
     "seed": "node scripts/seed.js",
     "reset-passwords": "node scripts/reset-passwords.js",
-    "migrate": "node scripts/migrate.js"
+    "migrate": "node scripts/migrate.js",
+    "seed-dito-memory": "node scripts/seed-dito-memory.js"
   },
   "engines": {
     "node": ">=22.5.0"
@@ -21,14 +22,20 @@
     "bcryptjs": "^2.4.3",
     "next": "16.3.1",
     "next-auth": "^4.24.7",
+    "otpauth": "^9.5.1",
+    "qrcode": "^1.5.4",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "resend": "^6.20.0",
+    "web-push": "^3.6.7"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
     "@types/node": "^22.10.0",
+    "@types/qrcode": "^1.5.6",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
+    "@types/web-push": "^3.6.4",
     "autoprefixer": "^10.4.20",
     "postcss": "^8.4.41",
     "tailwindcss": "^3.4.7",

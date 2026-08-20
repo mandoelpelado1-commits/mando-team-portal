@@ -142,3 +142,147 @@ CREATE TABLE IF NOT EXISTS dsp_profiles (
 ALTER TABLE posts ADD COLUMN IF NOT EXISTS media_url TEXT;
 ALTER TABLE posts ADD COLUMN IF NOT EXISTS media_type TEXT;
 ALTER TABLE posts ADD COLUMN IF NOT EXISTS link_url TEXT;
+
+-- Contacts / CRM (press, venues, promoters, sync supervisors, curators)
+CREATE TABLE IF NOT EXISTS contacts (
+  id SERIAL PRIMARY KEY,
+  name TEXT NOT NULL,
+  type TEXT NOT NULL CHECK (type IN ('venue', 'promoter', 'press', 'sync', 'curator', 'other')),
+  company TEXT,
+  email TEXT,
+  phone TEXT,
+  city TEXT,
+  country TEXT,
+  status TEXT NOT NULL DEFAULT 'new' CHECK (status IN ('new', 'contacted', 'responded', 'negotiating', 'confirmed', 'passed', 'dead')),
+  notes TEXT,
+  created_by INTEGER REFERENCES users(id),
+  updated_by INTEGER REFERENCES users(id),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Show / booking pipeline, optionally linked to a contact
+CREATE TABLE IF NOT EXISTS shows (
+  id SERIAL PRIMARY KEY,
+  contact_id INTEGER REFERENCES contacts(id) ON DELETE SET NULL,
+  venue_name TEXT NOT NULL,
+  city TEXT,
+  country TEXT,
+  target_date DATE,
+  capacity INTEGER,
+  fee_offered NUMERIC(10, 2),
+  status TEXT NOT NULL DEFAULT 'prospecting' CHECK (status IN ('prospecting', 'pitched', 'negotiating', 'confirmed', 'completed', 'cancelled')),
+  notes TEXT,
+  pitch_draft TEXT,
+  created_by INTEGER REFERENCES users(id),
+  updated_by INTEGER REFERENCES users(id),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Playlist placements — no platform exposes a "which playlists is this track
+-- on" API, so this is deliberately manual tracking, same pattern as
+-- dsp_profiles. Team logs what they find via Spotify for Artists or discovery.
+CREATE TABLE IF NOT EXISTS playlists (
+  id SERIAL PRIMARY KEY,
+  name TEXT NOT NULL,
+  platform TEXT NOT NULL DEFAULT 'spotify' CHECK (platform IN ('spotify', 'apple_music', 'youtube_music', 'other')),
+  curator TEXT,
+  song_title TEXT,
+  followers INTEGER,
+  url TEXT,
+  status TEXT NOT NULL DEFAULT 'pitched' CHECK (status IN ('pitched', 'added', 'removed')),
+  date_added DATE,
+  notes TEXT,
+  created_by INTEGER REFERENCES users(id),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Unified activity feed across features.
+CREATE TABLE IF NOT EXISTS activity_log (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  category TEXT NOT NULL,
+  action TEXT NOT NULL,
+  summary TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS activity_log_created_at_idx ON activity_log (created_at DESC);
+
+-- Per-user, per-day counters so AI endpoints can't be hammered unbounded.
+CREATE TABLE IF NOT EXISTS ai_usage (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  endpoint TEXT NOT NULL,
+  usage_date DATE NOT NULL,
+  count INTEGER NOT NULL DEFAULT 0,
+  UNIQUE (user_id, endpoint, usage_date)
+);
+
+-- TOTP-based 2FA. NULL secret = not enrolled.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS totp_secret TEXT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS totp_enabled BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS active BOOLEAN NOT NULL DEFAULT TRUE;
+
+-- DITO: AI assistant for grants/loans research and application help.
+-- Uses Claude's server-side web search tool for current program info.
+CREATE TABLE IF NOT EXISTS dito_conversations (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  title TEXT NOT NULL DEFAULT 'New conversation',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS dito_messages (
+  id SERIAL PRIMARY KEY,
+  conversation_id INTEGER NOT NULL REFERENCES dito_conversations(id) ON DELETE CASCADE,
+  role TEXT NOT NULL CHECK (role IN ('user', 'assistant')),
+  content TEXT NOT NULL,
+  sources_json TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS dito_messages_conv_idx ON dito_messages (conversation_id, created_at);
+
+ALTER TABLE users ADD COLUMN IF NOT EXISTS email TEXT;
+
+CREATE TABLE IF NOT EXISTS outlook_accounts (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+  email TEXT,
+  access_token TEXT,
+  refresh_token TEXT,
+  expires_at TEXT,
+  connected_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS google_calendar_accounts (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+  email TEXT,
+  access_token TEXT,
+  refresh_token TEXT,
+  expires_at TEXT,
+  connected_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+ALTER TABLE posts ADD COLUMN IF NOT EXISTS google_event_id TEXT;
+
+ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url TEXT;
+
+CREATE TABLE IF NOT EXISTS dito_memory (
+  key TEXT PRIMARY KEY,
+  content TEXT NOT NULL,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS push_subscriptions (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  endpoint TEXT NOT NULL UNIQUE,
+  p256dh TEXT NOT NULL,
+  auth TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS push_subscriptions_user_idx ON push_subscriptions (user_id);

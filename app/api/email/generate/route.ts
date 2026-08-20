@@ -2,10 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import Anthropic from '@anthropic-ai/sdk';
 import { authOptions } from '@/lib/auth';
+import { enforceAiLimit } from '@/lib/rateLimit';
 
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  const limited = await enforceAiLimit(Number(session.user.id), 'email-generate', 20);
+  if (limited) return limited;
 
   if (!process.env.ANTHROPIC_API_KEY) {
     return NextResponse.json(
@@ -14,16 +18,26 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const { topic, language } = await req.json();
+  const { topic, language, mediaType, linkUrl } = await req.json();
   if (!topic || !topic.trim()) {
     return NextResponse.json({ error: 'Tell us what the email is about.' }, { status: 400 });
   }
 
   const lang = language === 'es' ? 'Spanish' : 'English';
 
+  const attachmentNote =
+    mediaType === 'image'
+      ? '\nA photo will be placed right under the header — you can reference "the photo below" naturally, but do not describe its contents since you cannot see it.'
+      : mediaType === 'video'
+        ? '\nA "Watch the video" button will appear below the text — write a line that makes people want to tap it.'
+        : '';
+  const linkNote = linkUrl
+    ? '\nA button linking to the release/store will appear at the end — write toward that call to action.'
+    : '';
+
   const prompt = `You write email blasts for reggaeton/urbano artist Mando El Pelado. Promo focus: Ecuador.
 
-What this email is about: ${topic}
+What this email is about: ${topic}${attachmentNote}${linkNote}
 
 Write a complete email blast in ${lang}. Keep it warm, direct, and fan-facing. Short paragraphs — this is a marketing email, not an essay.
 

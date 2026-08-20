@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import Sidebar from '@/components/Sidebar';
+import DitoWidget from '@/components/DitoWidget';
 
 export default function DashboardShell({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
@@ -29,6 +30,15 @@ export default function DashboardShell({ children }: { children: React.ReactNode
     }
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
+  // Register the push service worker quietly on every dashboard visit. This
+  // alone does nothing — no notification exists until the user opts in on
+  // the Settings page, which is what actually creates a push subscription.
+  useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(() => {});
+    }
   }, []);
 
   return (
@@ -83,6 +93,8 @@ export default function DashboardShell({ children }: { children: React.ReactNode
       >
         {children}
       </main>
+
+      <DitoWidget />
     </div>
   );
 }

@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import Anthropic from '@anthropic-ai/sdk';
 import { authOptions } from '@/lib/auth';
 import { createAiDraft, createPost, Platform } from '@/lib/db';
+import { enforceAiLimit } from '@/lib/rateLimit';
 
 interface GeneratedPost {
   platform: Platform;
@@ -15,6 +16,9 @@ interface GeneratedPost {
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  const limited = await enforceAiLimit(Number(session.user.id), 'generate-posts', 30);
+  if (limited) return limited;
 
   if (!process.env.ANTHROPIC_API_KEY) {
     return NextResponse.json(

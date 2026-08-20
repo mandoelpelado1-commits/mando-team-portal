@@ -15,6 +15,13 @@ interface PlatformStatus {
   redirectUri: string;
 }
 
+interface TeamConnection {
+  userName: string;
+  platform: string;
+  platformUsername: string | null;
+  connectedAt: string | null;
+}
+
 const DEVELOPER_CONSOLE_URL: Record<string, string> = {
   instagram: 'https://developers.facebook.com/apps',
   facebook: 'https://developers.facebook.com/apps',
@@ -34,6 +41,7 @@ export default function SocialsPage() {
 function SocialsPageInner() {
   const { t } = useLanguage();
   const [platforms, setPlatforms] = useState<PlatformStatus[]>([]);
+  const [team, setTeam] = useState<TeamConnection[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<string | null>(null);
   const [clientId, setClientId] = useState('');
@@ -46,6 +54,7 @@ function SocialsPageInner() {
     const res = await fetch('/api/social/status');
     const data = await res.json();
     setPlatforms(data.platforms || []);
+    setTeam(data.team || []);
     setLoading(false);
   }
 
@@ -240,6 +249,27 @@ function SocialsPageInner() {
               )}
             </div>
           ))}
+        </div>
+      )}
+
+      {!loading && team.length > 0 && (
+        <div className="mt-10 rounded-xl border border-zinc-800 bg-panel p-6">
+          <p className="text-sm uppercase tracking-wide text-zinc-400">{t('socials', 'teamConnections')}</p>
+          <p className="mt-1 text-sm text-zinc-500">{t('socials', 'teamConnectionsHint')}</p>
+          <div className="mt-4 space-y-2">
+            {team.map((c, i) => (
+              <div
+                key={i}
+                className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-zinc-800 bg-black/20 px-4 py-3"
+              >
+                <span className="text-base text-zinc-200">
+                  {c.userName} <span className="text-zinc-500">·</span> {c.platform}
+                  {c.platformUsername ? ` · @${c.platformUsername}` : ''}
+                </span>
+                <span className="text-sm text-cyan">{t('common', 'connected')}</span>
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>

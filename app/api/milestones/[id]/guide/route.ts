@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import Anthropic from '@anthropic-ai/sdk';
 import { authOptions } from '@/lib/auth';
 import { getMilestoneById, getMilestoneGuide, saveMilestoneGuide } from '@/lib/db';
+import { enforceAiLimit } from '@/lib/rateLimit';
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions);
@@ -18,6 +19,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  const limited = await enforceAiLimit(Number(session.user.id), 'milestone-guide', 30);
+  if (limited) return limited;
 
   if (!process.env.ANTHROPIC_API_KEY) {
     return NextResponse.json(

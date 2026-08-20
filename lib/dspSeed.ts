@@ -145,13 +145,23 @@ export const DSP_SEED: DspSeed[] = [
   // account/IPI numbers and links out. Track the member number in the ID field.
   {
     slug: 'pro-bmi-ascap',
-    name: 'PRO — BMI or ASCAP',
+    name: 'PRO — BMI or ASCAP (US)',
     category: 'royalties',
     manageUrl: 'https://www.bmi.com',
     note_en:
-      'Collects public performance royalties (radio, venues, TV, the performance share of streaming). You affiliate with only ONE as a writer — you cannot split your catalog across two. Store your IPI/CAE number in the ID field.',
+      'Collects US public performance royalties (radio, venues, TV, the performance share of streaming). You affiliate with only ONE as a writer — you cannot split your catalog across two. Store your IPI/CAE number in the ID field.',
     note_es:
-      'Cobra regalías de ejecución pública (radio, locales, TV, la parte de ejecución del streaming). Como compositor te afilias a UNA sola — no puedes dividir tu catálogo entre dos. Guarda tu número IPI/CAE en el campo de ID.',
+      'Cobra regalías de ejecución pública en EE.UU. (radio, locales, TV, la parte de ejecución del streaming). Como compositor te afilias a UNA sola — no puedes dividir tu catálogo entre dos. Guarda tu número IPI/CAE en el campo de ID.',
+  },
+  {
+    slug: 'sayce',
+    name: 'SAYCE (Ecuador)',
+    category: 'royalties',
+    manageUrl: 'https://sayce.com.ec',
+    note_en:
+      "Ecuador's national authors/composers collecting society — the local equivalent of BMI/ASCAP, affiliated with CISAC. Directly relevant given the Ecuador promo focus: collects performance royalties from Ecuadorian radio, venues and TV that no US PRO reaches. Registration is a 4-step process on their site (application, register your works, sign, get paid). Store your SAYCE member number in the ID field.",
+    note_es:
+      'La sociedad ecuatoriana de autores y compositores — el equivalente local a BMI/ASCAP, afiliada a CISAC. Directamente relevante por el enfoque promocional en Ecuador: cobra regalías de ejecución de radio, locales y TV ecuatorianos que ninguna PRO de EE.UU. alcanza. El registro es un proceso de 4 pasos en su sitio (solicitud, registrar tus obras, firmar, cobrar). Guarda tu número de socio SAYCE en el campo de ID.',
   },
   {
     slug: 'the-mlc',

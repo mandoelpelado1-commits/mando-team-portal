@@ -7,18 +7,25 @@ import { signOut, useSession } from 'next-auth/react';
 import { useLanguage, LanguageToggle } from '@/components/LanguageProvider';
 import { TRANSLATIONS } from '@/lib/i18n';
 
-const NAV_ITEMS: { href: string; key: keyof typeof TRANSLATIONS.nav; icon: string }[] = [
+const NAV_ITEMS: { href: string; key: keyof typeof TRANSLATIONS.nav; icon: string; adminOnly?: boolean }[] = [
   { href: '/dashboard', key: 'overview', icon: '■' },
+  { href: '/dashboard/reports', key: 'reports', icon: '📊' },
+  { href: '/dashboard/dito', key: 'dito', icon: '✳' },
   { href: '/dashboard/generate', key: 'generate', icon: '✨' },
   { href: '/dashboard/schedule', key: 'schedule', icon: '📅' },
   { href: '/dashboard/socials', key: 'socials', icon: '🔗' },
   { href: '/dashboard/email', key: 'email', icon: '📧' },
   { href: '/dashboard/website', key: 'website', icon: '🌐' },
   { href: '/dashboard/ads', key: 'ads', icon: '📈' },
-  { href: '/dashboard/ideas', key: 'ideas', icon: '💡' },
-  { href: '/dashboard/platforms', key: 'platforms', icon: '🎧' },
   { href: '/dashboard/merch', key: 'merch', icon: '🛍' },
+  { href: '/dashboard/platforms', key: 'platforms', icon: '🎧' },
+  { href: '/dashboard/playlists', key: 'playlists', icon: '🎵' },
+  { href: '/dashboard/shows', key: 'shows', icon: '🎤' },
+  { href: '/dashboard/contacts', key: 'contacts', icon: '📇' },
+  { href: '/dashboard/ideas', key: 'ideas', icon: '💡' },
   { href: '/dashboard/milestones', key: 'milestones', icon: '🎯' },
+  { href: '/dashboard/activity', key: 'activity', icon: '🕓' },
+  { href: '/dashboard/admin', key: 'admin', icon: '👥', adminOnly: true },
   { href: '/dashboard/settings', key: 'settings', icon: '⚙' },
 ];
 
@@ -54,7 +61,7 @@ export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
       </div>
 
       <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-3 xl:space-y-1.5 xl:px-4 xl:py-4">
-        {NAV_ITEMS.map((item) => {
+        {NAV_ITEMS.filter((item) => !item.adminOnly || role === 'admin').map((item) => {
           const active = item.href === '/dashboard' ? pathname === item.href : pathname?.startsWith(item.href);
           return (
             <Link
@@ -67,7 +74,12 @@ export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
                   : 'text-zinc-400 hover:bg-white/5 hover:text-white'
               }`}
             >
-              <span className="shrink-0 text-lg">{item.icon}</span>
+              {item.href === '/dashboard/dito' ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src="/dito-avatar.jpg" alt="" className="h-6 w-6 shrink-0 rounded-full object-cover" />
+              ) : (
+                <span className="shrink-0 text-lg">{item.icon}</span>
+              )}
               <span className="truncate">{t('nav', item.key)}</span>
             </Link>
           );
@@ -79,9 +91,19 @@ export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
         style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}
       >
         <LanguageToggle className="mb-2.5" />
-        <div className="flex items-baseline gap-2">
-          <p className="truncate text-base font-semibold text-white">{session?.user?.name}</p>
-          <p className="shrink-0 text-sm text-gold">{role ? t('roles', role) : ''}</p>
+        <div className="flex items-center gap-2.5">
+          {session?.user?.avatarUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={session.user.avatarUrl} alt="" className="h-8 w-8 shrink-0 rounded-full object-cover" />
+          ) : (
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-magenta to-cyan text-sm font-bold text-black">
+              {(session?.user?.name || '?').trim().charAt(0).toUpperCase()}
+            </div>
+          )}
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-base font-semibold text-white">{session?.user?.name}</p>
+            <p className="truncate text-sm text-gold">{role ? t('roles', role) : ''}</p>
+          </div>
         </div>
         <button
           onClick={() => signOut({ callbackUrl: '/login' })}

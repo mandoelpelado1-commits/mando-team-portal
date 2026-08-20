@@ -8,6 +8,9 @@ export interface EmailDraft {
   greeting: string;
   paragraphs: string[];
   signOff: string;
+  mediaUrl?: string | null;
+  mediaType?: 'image' | 'video' | null;
+  linkUrl?: string | null;
 }
 
 function escapeXml(text: string): string {
@@ -28,7 +31,20 @@ function buildMjml(draft: EmailDraft): string {
     )
     .join('');
 
-  return `<mjml><mj-body background-color="#f4f4f5"><mj-section background-color="#0b0b0f" padding="24px"><mj-column><mj-text align="center" color="#ffffff" font-size="20px" font-weight="700" letter-spacing="1px">MANDO EL PELADO</mj-text></mj-column></mj-section><mj-section background-color="#ffffff" padding="32px"><mj-column>${textBlocks}</mj-column></mj-section></mj-body></mjml>`;
+  // Email clients can't play video inline, so a video attachment becomes a
+  // "watch" button instead of an embedded player.
+  const mediaBlock =
+    draft.mediaUrl && draft.mediaType === 'image'
+      ? `<mj-image src="${escapeXml(draft.mediaUrl)}" alt="" padding-bottom="20px" border-radius="8px" />`
+      : draft.mediaUrl && draft.mediaType === 'video'
+        ? `<mj-button href="${escapeXml(draft.mediaUrl)}" background-color="#18181b" color="#ffffff" font-size="15px" border-radius="6px" padding-bottom="20px">▶ Watch the video</mj-button>`
+        : '';
+
+  const linkBlock = draft.linkUrl
+    ? `<mj-button href="${escapeXml(draft.linkUrl)}" background-color="#e91e8c" color="#ffffff" font-size="15px" font-weight="700" border-radius="6px" padding-top="8px">Escúchalo / Listen</mj-button>`
+    : '';
+
+  return `<mjml><mj-body background-color="#f4f4f5"><mj-section background-color="#0b0b0f" padding="24px"><mj-column><mj-text align="center" color="#ffffff" font-size="20px" font-weight="700" letter-spacing="1px">MANDO EL PELADO</mj-text></mj-column></mj-section><mj-section background-color="#ffffff" padding="32px"><mj-column>${mediaBlock}${textBlocks}${linkBlock}</mj-column></mj-section></mj-body></mjml>`;
 }
 
 export interface CreatedCampaign {

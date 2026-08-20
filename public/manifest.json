@@ -1,0 +1,18 @@
+{
+  "name": "Mando El Pelado - Team Portal",
+  "short_name": "Mando Portal",
+  "description": "Internal team portal for Mando El Pelado career management",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#0b0b0f",
+  "theme_color": "#0b0b0f",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/mando-el-pelado-logo.png",
+      "sizes": "1525x1525",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

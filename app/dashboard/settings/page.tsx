@@ -39,10 +39,19 @@ export default function SettingsPage() {
   const [emailSaved, setEmailSaved] = useState(false);
   const [emailError, setEmailError] = useState('');
 
+  // Phone (SMS notifications)
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [phoneSaved, setPhoneSaved] = useState(false);
+  const [phoneError, setPhoneError] = useState('');
+
   useEffect(() => {
     fetch('/api/settings/email')
       .then((r) => r.json())
       .then((d) => setEmail(d.email || ''))
+      .catch(() => {});
+    fetch('/api/settings/phone')
+      .then((r) => r.json())
+      .then((d) => setPhoneNumber(d.phoneNumber || ''))
       .catch(() => {});
     fetch('/api/settings/profile')
       .then((r) => r.json())
@@ -247,6 +256,22 @@ export default function SettingsPage() {
     setEmailSaved(true);
   }
 
+  async function savePhone() {
+    setPhoneError('');
+    setPhoneSaved(false);
+    const res = await fetch('/api/settings/phone', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phoneNumber }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      setPhoneError(data.error);
+      return;
+    }
+    setPhoneSaved(true);
+  }
+
   async function start2fa() {
     setTwoFaError('');
     const res = await fetch('/api/2fa/setup', { method: 'POST' });
@@ -387,6 +412,27 @@ export default function SettingsPage() {
           className="mt-4 rounded-md border border-zinc-700 px-5 py-2.5 text-base text-zinc-300 hover:border-magenta hover:text-white"
         >
           {t('security', 'saveEmail')}
+        </button>
+      </div>
+
+      {/* Phone number for text notifications */}
+      <div className="mt-6 max-w-md rounded-xl border border-zinc-800 bg-panel p-6">
+        <p className="text-lg font-semibold text-white">{t('security', 'yourPhone')}</p>
+        <p className="mt-1 text-sm text-zinc-400">{t('security', 'phoneHint')}</p>
+        <input
+          type="tel"
+          className="mt-4 w-full rounded-md border border-zinc-700 bg-black/40 px-4 py-3 text-base outline-none focus:border-magenta"
+          placeholder="+18095551234"
+          value={phoneNumber}
+          onChange={(e) => setPhoneNumber(e.target.value)}
+        />
+        {phoneError && <p className="mt-2 text-base text-magenta">{phoneError}</p>}
+        {phoneSaved && <p className="mt-2 text-base text-cyan">{t('settings', 'updated')}</p>}
+        <button
+          onClick={savePhone}
+          className="mt-4 rounded-md border border-zinc-700 px-5 py-2.5 text-base text-zinc-300 hover:border-magenta hover:text-white"
+        >
+          {t('security', 'savePhone')}
         </button>
       </div>
 

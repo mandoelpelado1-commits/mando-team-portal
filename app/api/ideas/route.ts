@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth';
 import { createIdea, getAllIdeas, getAllIdeaAcknowledgments, getAllUsers, logActivity } from '@/lib/db';
 import { notifyTeam } from '@/lib/notify';
 import { pushToTeam } from '@/lib/push';
+import { smsTeam } from '@/lib/sms';
 
 export async function GET() {
   const session = await getServerSession(authOptions);
@@ -57,5 +58,6 @@ export async function POST(req: NextRequest) {
     body: content.trim().slice(0, 140),
     url: '/dashboard/ideas',
   });
+  await smsTeam(userId, `Mando El Pelado Portal: ${session.user.name} posted a new idea — "${content.trim().slice(0, 100)}"`);
   return NextResponse.json({ id });
 }

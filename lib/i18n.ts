@@ -531,6 +531,12 @@ export const TRANSLATIONS = {
       en: 'Used for alerts on pending approvals and new ideas.',
     },
     saveEmail: { es: 'Guardar correo', en: 'Save email' },
+    yourPhone: { es: 'Tu número (para mensajes de texto)', en: 'Your phone number (for text alerts)' },
+    phoneHint: {
+      es: 'Incluye el código de país (ej. +1 809 555 1234). Te llegará un texto cuando alguien publique una idea nueva.',
+      en: 'Include the country code (e.g. +1 809 555 1234). You\'ll get a text when someone posts a new idea.',
+    },
+    savePhone: { es: 'Guardar número', en: 'Save number' },
     pushTitle: { es: 'Notificaciones en el teléfono', en: 'Phone notifications' },
     pushHint: {
       es: 'Recibe una notificación en este dispositivo cuando haya una idea nueva, una aprobación de presupuesto pendiente, u otras cosas por hacer.',

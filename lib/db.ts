@@ -25,6 +25,7 @@ export interface User {
   totp_enabled: boolean;
   email: string | null;
   avatar_url: string | null;
+  phone_number: string | null;
   created_at: string;
 }
 
@@ -850,6 +851,14 @@ export async function setUserEmail(userId: number, email: string | null) {
 
 export async function getUsersWithEmail(): Promise<User[]> {
   return (await getAllUsers()).filter((u) => u.email && u.active !== false);
+}
+
+export async function setUserPhone(userId: number, phoneNumber: string | null) {
+  await sql`UPDATE users SET phone_number = ${phoneNumber} WHERE id = ${userId}`;
+}
+
+export async function getUsersWithPhone(): Promise<User[]> {
+  return (await getAllUsers()).filter((u) => u.phone_number && u.active !== false);
 }
 
 // --- DITO's long-term memory (persisted research, not per-conversation state) ---

@@ -30,6 +30,8 @@ Live: https://mando-team-portal.vercel.app
 | Digital Platforms | 19 streaming/video/royalty services with claim tracking |
 | Merch Store | Printify pop-up shop sales |
 | Career Milestones | 17 industry milestones with AI step/budget guides |
+| Mando Avispate | Personal goals for Mando, separate from team/company work |
+| Text notifications | Optional per-user phone number, texts on new Ideas posts — see [`docs/sms-notifications.md`](docs/sms-notifications.md) for the Twilio setup runbook |
 
 Interface is fully bilingual (Spanish / English), switchable per device.
 

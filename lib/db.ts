@@ -746,6 +746,13 @@ export async function checkAndIncrementAiUsage(userId: number, endpoint: string,
   return rows[0].count <= dailyLimit;
 }
 
+export async function getAiUsageToday(userId: number): Promise<{ endpoint: string; count: number }[]> {
+  const today = new Date().toISOString().slice(0, 10);
+  return (await sql`
+    SELECT endpoint, count FROM ai_usage WHERE user_id = ${userId} AND usage_date = ${today}
+  `) as unknown as { endpoint: string; count: number }[];
+}
+
 // --- User management (admin) ---
 export async function createTeamUser(fields: {
   username: string;

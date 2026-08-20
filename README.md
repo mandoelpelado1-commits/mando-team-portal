@@ -22,7 +22,7 @@ Live: https://mando-team-portal.vercel.app
 | Overview | AI-written daily brief from real portal state |
 | AI Post Generator | Captions + hashtags + timing, with photo/video upload and link |
 | Weekly Schedule | Place drafts on a calendar; cron publisher (pending platform approvals) |
-| My Socials | Per-user OAuth to Instagram, TikTok, Facebook, YouTube, X |
+| My Socials | Per-user OAuth to Instagram, TikTok, Facebook, YouTube, X — see [`docs/social-connections.md`](docs/social-connections.md) for the setup runbook (TikTok especially) |
 | Email Blast | AI writes an email, pushed to Wix as a draft |
 | Website Analytics | Wix site traffic and sales |
 | Google Ads Budget | Shared account, two-person approval on budget changes |

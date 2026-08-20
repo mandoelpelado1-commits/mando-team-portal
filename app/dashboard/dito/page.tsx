@@ -3,6 +3,22 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLanguage } from '@/components/LanguageProvider';
 
+interface EndpointUsage {
+  endpoint: string;
+  label_en: string;
+  label_es: string;
+  used: number;
+  limit: number;
+}
+
+interface UsageData {
+  myUsageToday: EndpointUsage[];
+  billingConfigured: boolean;
+  billing: { totalUsd: number; periodDays: number; todayUsd: number } | null;
+  usage: { totalInputTokens: number; totalOutputTokens: number; periodDays: number } | null;
+  billingError: string | null;
+}
+
 interface Conversation {
   id: number;
   title: string;
@@ -31,6 +47,14 @@ export default function DitoPage() {
   const [memory, setMemory] = useState<{ content: string; updatedAt: string } | null>(null);
   const [refreshingMemory, setRefreshingMemory] = useState(false);
   const [memoryError, setMemoryError] = useState('');
+
+  const [usage, setUsage] = useState<UsageData | null>(null);
+  const [showUsage, setShowUsage] = useState(false);
+
+  async function loadUsage() {
+    const res = await fetch('/api/dito/usage');
+    if (res.ok) setUsage(await res.json());
+  }
 
   async function loadMemory() {
     const res = await fetch('/api/dito/memory/refresh');
@@ -71,6 +95,7 @@ export default function DitoPage() {
   useEffect(() => {
     loadConversations();
     loadMemory();
+    loadUsage();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -135,6 +160,7 @@ export default function DitoPage() {
         { id: Date.now() + 1, role: 'assistant', content: data.reply, sources: data.sources || [], createdAt: new Date().toISOString() },
       ]);
       loadConversations();
+      loadUsage();
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -171,6 +197,70 @@ export default function DitoPage() {
               <span className="line-clamp-1">{c.title}</span>
             </button>
           ))}
+        </div>
+
+        {/* Usage */}
+        <div className="mt-4 rounded-lg border border-zinc-800 bg-panel p-3">
+          <button
+            onClick={() => setShowUsage((v) => !v)}
+            className="flex w-full items-center justify-between text-left text-sm font-semibold text-zinc-300"
+          >
+            <span>📊 {t('dito', 'usageTitle')}</span>
+            <span className="text-zinc-500">{showUsage ? '▲' : '▼'}</span>
+          </button>
+
+          {showUsage && usage && (
+            <div className="mt-3 space-y-3">
+              <div>
+                <p className="mb-1.5 text-xs uppercase tracking-wide text-zinc-500">{t('dito', 'usageToday')}</p>
+                <div className="space-y-1.5">
+                  {usage.myUsageToday.map((e) => (
+                    <div key={e.endpoint} className="flex items-center justify-between gap-2 text-sm">
+                      <span className="truncate text-zinc-400">{lang === 'es' ? e.label_es : e.label_en}</span>
+                      <span
+                        className={`shrink-0 font-mono ${e.used >= e.limit ? 'text-magenta' : 'text-zinc-300'}`}
+                      >
+                        {e.used}/{e.limit}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="border-t border-zinc-800 pt-3">
+                <p className="mb-1.5 text-xs uppercase tracking-wide text-zinc-500">{t('dito', 'usageBilling')}</p>
+                {!usage.billingConfigured ? (
+                  <p className="text-sm text-zinc-600">{t('dito', 'usageBillingNotConfigured')}</p>
+                ) : usage.billingError ? (
+                  <p className="text-sm text-magenta">{usage.billingError}</p>
+                ) : usage.billing ? (
+                  <>
+                    <div className="flex items-baseline gap-4">
+                      <div>
+                        <p className="text-2xl font-semibold text-white">${usage.billing.todayUsd.toFixed(2)}</p>
+                        <p className="text-sm text-zinc-500">{t('dito', 'usageToday30')}</p>
+                      </div>
+                      <div>
+                        <p className="text-lg font-semibold text-zinc-300">${usage.billing.totalUsd.toFixed(2)}</p>
+                        <p className="text-sm text-zinc-500">
+                          {t('dito', 'usageLast')} {usage.billing.periodDays} {t('dito', 'usageDays')}
+                        </p>
+                      </div>
+                    </div>
+                    {usage.usage && (
+                      <p className="mt-2 text-sm text-zinc-500">
+                        {(usage.usage.totalInputTokens + usage.usage.totalOutputTokens).toLocaleString(lang === 'es' ? 'es-EC' : 'en-US')}{' '}
+                        {t('dito', 'usageTokens')} ({usage.usage.periodDays}d)
+                      </p>
+                    )}
+                    <p className="mt-2 text-sm text-zinc-600">{t('dito', 'usageNoBalance')}</p>
+                  </>
+                ) : (
+                  <p className="text-sm text-zinc-600">{t('common', 'loading')}</p>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

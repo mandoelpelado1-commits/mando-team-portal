@@ -46,11 +46,15 @@ export function buildAuthorizeUrl(platform: Platform, credentials: PlatformCrede
       return `https://www.facebook.com/v19.0/dialog/oauth?${params.toString()}`;
     }
     case 'tiktok': {
+      // 'video.publish' is not a real TikTok scope — it isn't offered
+      // anywhere in the Developer Portal's scope picker and requesting it
+      // makes the whole authorize call fail with unauthorized_client.
+      // 'video.upload' (share as draft, via Content Posting API) is correct.
       const params = new URLSearchParams({
         client_key: credentials.clientId,
         redirect_uri: redirectUri('tiktok'),
         response_type: 'code',
-        scope: 'user.info.basic,video.publish,video.upload',
+        scope: 'user.info.basic,video.upload',
         state,
       });
       return `https://www.tiktok.com/v2/auth/authorize?${params.toString()}`;
@@ -111,7 +115,11 @@ export async function exchangeCodeForToken(
     case 'tiktok': {
       const res = await fetch('https://open.tiktokapis.com/v2/oauth/token/', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          // TikTok's docs list this as required on the token endpoint.
+          'Cache-Control': 'no-cache',
+        },
         body: new URLSearchParams({
           client_key: credentials.clientId,
           client_secret: credentials.clientSecret,
@@ -120,8 +128,12 @@ export async function exchangeCodeForToken(
           redirect_uri: redirectUri('tiktok'),
         }),
       });
-      if (!res.ok) throw new Error(`TikTok token exchange failed: ${await res.text()}`);
       const data = await res.json();
+      // TikTok can return 200 with an `error` field instead of a non-2xx
+      // status, so check the payload shape, not just res.ok.
+      if (!res.ok || !data.access_token) {
+        throw new Error(`TikTok token exchange failed: ${JSON.stringify(data)}`);
+      }
       return {
         accessToken: data.access_token,
         refreshToken: data.refresh_token,

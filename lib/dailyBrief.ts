@@ -107,6 +107,7 @@ export async function gatherPortalState() {
       { feature: 'Connect Outlook (any Microsoft 365 mailbox, incl. GoDaddy-hosted) to import contacts', envVar: 'MICROSOFT_CLIENT_ID + MICROSOFT_CLIENT_SECRET', done: Boolean(process.env.MICROSOFT_CLIENT_ID && process.env.MICROSOFT_CLIENT_SECRET) },
       { feature: 'Google Calendar sync for the Weekly Schedule', envVar: 'GOOGLE_CALENDAR_CLIENT_ID + GOOGLE_CALENDAR_CLIENT_SECRET', done: Boolean(process.env.GOOGLE_CALENDAR_CLIENT_ID && process.env.GOOGLE_CALENDAR_CLIENT_SECRET) },
       { feature: 'Phone push notifications (new ideas, pending budget approvals, daily digest)', envVar: 'VAPID_PUBLIC_KEY + VAPID_PRIVATE_KEY', done: Boolean(process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) },
+      { feature: 'Anthropic billing panel on the DITO page', envVar: 'ANTHROPIC_ADMIN_API_KEY', done: Boolean(process.env.ANTHROPIC_ADMIN_API_KEY) },
     ],
   };
 }

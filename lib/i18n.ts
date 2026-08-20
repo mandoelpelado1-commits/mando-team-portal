@@ -146,6 +146,15 @@ export const TRANSLATIONS = {
       es: 'Quién está conectado a qué. Nunca se comparten contraseñas ni credenciales — solo el estado de conexión.',
       en: "Who's connected to what. Passwords and credentials are never shared — only connection status.",
     },
+    tiktokClientKeyLabel: { es: 'Client Key:', en: 'Client Key:' },
+    tiktokClientKeyHint: {
+      es: 'TikTok muestra tres valores distintos en su portal: App ID, Client Key y Client Secret. Usa el Client Key aquí — el App ID no funciona.',
+      en: "TikTok's dashboard shows three separate values: App ID, Client Key, and Client Secret. Use the Client Key here — the App ID won't work.",
+    },
+    tiktokTroubleshoot: {
+      es: 'Si TikTok da error de "client_key" al conectar: confirma que pegaste el Client Key (no el App ID), que tu app de TikTok está en modo Live (no solo sandbox) o que tu cuenta está agregada como usuario de prueba, y que el "Login Kit" esté agregado como producto de la app.',
+      en: 'If TikTok shows a "client_key" error when connecting: confirm you pasted the Client Key (not the App ID), that your TikTok app is Live (not sandbox-only) or your account is added as a test user, and that "Login Kit" is added as a product on the app.',
+    },
   },
   email: {
     title: { es: 'Email Blast', en: 'Email Blast' },
@@ -452,6 +461,21 @@ export const TRANSLATIONS = {
     mandoMemoryNone: { es: 'DITO aún no ha investigado a Mando El Pelado.', en: "DITO hasn't researched Mando El Pelado yet." },
     mandoMemoryRefresh: { es: 'Actualizar investigación', en: 'Refresh research' },
     mandoMemoryRefreshing: { es: 'Investigando en la web...', en: 'Researching the web...' },
+    usageTitle: { es: 'Uso y facturación', en: 'Usage & billing' },
+    usageToday: { es: 'Uso de hoy (tú)', en: "Today's usage (you)" },
+    usageBilling: { es: 'Facturación de Anthropic', en: 'Anthropic billing' },
+    usageBillingNotConfigured: {
+      es: 'No conectado (falta ANTHROPIC_ADMIN_API_KEY). Esta es una clave distinta a la que usa DITO para responder — se crea en console.anthropic.com > Settings > Admin API keys, con el permiso de lectura de Usage & Cost.',
+      en: "Not connected (missing ANTHROPIC_ADMIN_API_KEY). This is a different key than the one DITO uses to reply — create one at console.anthropic.com > Settings > Admin API keys, with the Usage & Cost read scope.",
+    },
+    usageToday30: { es: 'gastado hoy', en: 'spent today' },
+    usageLast: { es: 'últimos', en: 'last' },
+    usageDays: { es: 'días', en: 'days' },
+    usageTokens: { es: 'tokens', en: 'tokens' },
+    usageNoBalance: {
+      es: 'Nota: Anthropic no ofrece una API para ver el saldo/crédito restante de la cuenta — solo gasto histórico. Para ver el saldo disponible, revisa console.anthropic.com > Billing.',
+      en: "Note: Anthropic doesn't offer an API for remaining account balance/credit — only historical spend. To see available balance, check console.anthropic.com > Billing.",
+    },
     notConfigured: {
       es: 'Configura ANTHROPIC_API_KEY en .env.local para hablar con DITO.',
       en: 'Set ANTHROPIC_API_KEY in .env.local to talk to DITO.',

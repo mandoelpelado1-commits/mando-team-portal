@@ -30,6 +30,16 @@ const DEVELOPER_CONSOLE_URL: Record<string, string> = {
   x: 'https://developer.x.com/en/portal/dashboard',
 };
 
+// TikTok's own dashboard shows THREE distinct values — App ID, Client key,
+// and Client secret — and only "Client key" is the OAuth client_id we need.
+// Our field was generically labeled "Client ID / App ID" for every platform,
+// which reads as "these are interchangeable" and steers people toward
+// pasting the App ID by mistake — that's exactly what produces TikTok's
+// "couldn't log in... client_key" error at the authorize step.
+const CLIENT_ID_FIELD_OVERRIDE: Partial<Record<string, { es: string; en: string }>> = {
+  tiktok: { es: 'Client Key (no el App ID)', en: 'Client Key (not the App ID)' },
+};
+
 export default function SocialsPage() {
   return (
     <Suspense fallback={<p className="text-lg text-zinc-400">...</p>}>
@@ -39,7 +49,7 @@ export default function SocialsPage() {
 }
 
 function SocialsPageInner() {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const [platforms, setPlatforms] = useState<PlatformStatus[]>([]);
   const [team, setTeam] = useState<TeamConnection[]>([]);
   const [loading, setLoading] = useState(true);
@@ -142,13 +152,16 @@ function SocialsPageInner() {
                 <div className="mt-4 space-y-3">
                   <div>
                     <label className="mb-1 block text-sm uppercase tracking-wide text-zinc-500">
-                      {t('socials', 'clientId')}
+                      {CLIENT_ID_FIELD_OVERRIDE[p.platform]?.[lang] || t('socials', 'clientId')}
                     </label>
                     <input
                       className="w-full rounded-md border border-zinc-700 bg-black/40 px-3 py-2 text-base outline-none focus:border-magenta"
                       value={clientId}
                       onChange={(e) => setClientId(e.target.value)}
                     />
+                    {p.platform === 'tiktok' && (
+                      <p className="mt-1 text-sm text-gold">{t('socials', 'tiktokClientKeyHint')}</p>
+                    )}
                   </div>
                   <div>
                     <label className="mb-1 block text-sm uppercase tracking-wide text-zinc-500">
@@ -204,8 +217,12 @@ function SocialsPageInner() {
                     </p>
                   ) : (
                     <p className="break-anywhere mt-4 text-sm text-zinc-500">
-                      {t('socials', 'appId')} {p.clientId}
+                      {p.platform === 'tiktok' ? t('socials', 'tiktokClientKeyLabel') : t('socials', 'appId')} {p.clientId}
                     </p>
+                  )}
+
+                  {p.platform === 'tiktok' && p.configured && !p.connected && (
+                    <p className="mt-2 text-sm text-zinc-500">{t('socials', 'tiktokTroubleshoot')}</p>
                   )}
 
                   <div className="mt-5 flex flex-wrap gap-2">

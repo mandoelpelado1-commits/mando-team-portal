@@ -15,4 +15,4 @@ jobs:
       - name: Call auto-sync endpoint
         run: |
           curl -sf -X GET "https://mando-team-portal.vercel.app/api/cron/wix-contacts-sync" \
-            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
+            -H "Authorization: Bearer ${{ secrets.WIX_SYNC_SECRET }}"
